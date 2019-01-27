@@ -18,13 +18,13 @@ probable_dep = declare_dependency(
 
 # Make this library usable from the system's
 # package manager.
-install_headers('probable.hh', subdir : 'probable')
+install_headers(['probable.hh', 'vec3.hh'], subdir : 'probable')
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(
   name : 'probable',
   filebase : 'probable',
-  description : 'Meson sample project.',
+  description : 'Library for Monte Carlo simulations of electronic transport in solids',
   subdirs : 'probable',
   libraries : shlib,
   version : '0.1',
