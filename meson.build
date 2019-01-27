@@ -7,9 +7,9 @@ shlib = shared_library('probable', 'probable.cc',
   install : true,
 )
 
-test_exe = executable('probable', 'probable_test.cc',
-  link_with : shlib)
-test('probable', test_exe)
+# Tests
+test_rng = executable('rng', 'tests/rng.cc', link_with : shlib)
+test('rng', test_rng)
 
 # Make this library usable as a Meson subproject.
 probable_dep = declare_dependency(
