@@ -80,21 +80,20 @@ int main(int argc, char const *argv[]) {
                             16.6 * units::eV, // acoustic_deformation_potential
                             4.21,
                             11.4};
-  std::vector<Scattering *> scattering_mechanisms;
-  scattering_mechanisms.push_back(
-      new AcousticScattering(gallium_oxide, temperature));
-  scattering_mechanisms.push_back(new PolarOpticalAbsorptionScattering(
-      gallium_oxide, temperature, 21e-3 * units::eV));
-  scattering_mechanisms.push_back(new PolarOpticalEmissionScattering(
-      gallium_oxide, temperature, 21e-3 * units::eV));
-  scattering_mechanisms.push_back(new PolarOpticalAbsorptionScattering(
-      gallium_oxide, temperature, 44e-3 * units::eV));
-  scattering_mechanisms.push_back(new PolarOpticalEmissionScattering(
-      gallium_oxide, temperature, 44e-3 * units::eV));
+  std::vector<Scattering *> scattering_mechanisms{
+      new AcousticScattering(gallium_oxide, temperature),
+      new PolarOpticalAbsorptionScattering(gallium_oxide, temperature,
+                                           21e-3 * units::eV),
+      new PolarOpticalEmissionScattering(gallium_oxide, temperature,
+                                         21e-3 * units::eV),
+      new PolarOpticalAbsorptionScattering(gallium_oxide, temperature,
+                                           44e-3 * units::eV),
+      new PolarOpticalEmissionScattering(gallium_oxide, temperature,
+                                         44e-3 * units::eV)};
 
-  Vec3 electric_field = {parse<double>(argv[2]) * units::V / units::m, 0, 0};
+  Vec3 electric_field{parse<double>(argv[2]) * units::V / units::m, 0, 0};
   // std::cout << temperature << ", " << electric_field.x << "\n";
-  Vec3 magnetic_field = {0, 0, 0};
+  Vec3 magnetic_field{0, 0, 0};
   double time_step = 1e-15 * units::s;
   double all_time = 1e-9 * units::s;
   size_t ansemble_size = 10;
