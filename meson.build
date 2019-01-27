@@ -7,6 +7,11 @@ shlib = shared_library('probable', 'probable.cc',
   install : true,
 )
 
+# Examples
+gallium_oxide = executable('gallium_oxide',
+                           'examples/gallium_oxide.cc',
+                           link_with : shlib)
+
 # Tests
 test_rng = executable('rng', 'tests/rng.cc', link_with : shlib)
 test('rng', test_rng)
