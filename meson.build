@@ -2,14 +2,9 @@ project('probable', 'cpp',
   version : '0.1',
   default_options : ['warning_level=3', 'cpp_std=c++14'])
 
-# These arguments are only used to build the shared library
-# not the executables that use the library.
-lib_args = ['-DBUILDING_PROBABLE']
-
 shlib = shared_library('probable', 'probable.cc',
+  dependencies: dependency('openmp'),
   install : true,
-  cpp_args : lib_args,
-  gnu_symbol_visibility : 'hidden',
 )
 
 test_exe = executable('probable', 'probable_test.cc',
