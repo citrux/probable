@@ -68,18 +68,24 @@ template <typename T> T parse(const std::string &s) {
 }
 
 int main(int argc, char const *argv[]) {
-  if (argc != 3) {
-    std::cout << "Usage: " << argv[0] << " <temperature> <electric field>\n";
+  if (argc != 4) {
+    std::cout << "Invalid number of arguments\n";
+    std::cout << "Usage: " << argv[0]
+              << " <ansemble size> <temperature> <electric field>\n";
     return 1;
   }
-  double temperature = parse<double>(argv[1]) * units::K;
 
-  Material gallium_oxide = {0.29 * consts::me, // electron effective mass
-                            5.88 * units::g / pow(units::cm, 3), // density
-                            6.8e3 * units::m / units::s, // sound_velocity
-                            16.6 * units::eV, // acoustic_deformation_potential
-                            4.21,
-                            11.4};
+  size_t ansemble_size = parse<int>(argv[1]);
+  double temperature = parse<double>(argv[2]) * units::K;
+  Vec3 electric_field{parse<double>(argv[3]) * units::V / units::m, 0, 0};
+  Vec3 magnetic_field{0, 0, 0};
+
+  Material gallium_oxide{0.29 * consts::me, // electron effective mass
+                         5.88 * units::g / pow(units::cm, 3), // density
+                         6.8e3 * units::m / units::s,         // sound_velocity
+                         16.6 * units::eV, // acoustic deformation potential
+                         4.21,             // high-frequency dielectric constant
+                         11.4};            // static dielectric constant
   std::vector<Scattering *> scattering_mechanisms{
       new AcousticScattering(gallium_oxide, temperature),
       new PolarOpticalAbsorptionScattering(gallium_oxide, temperature,
@@ -91,12 +97,8 @@ int main(int argc, char const *argv[]) {
       new PolarOpticalEmissionScattering(gallium_oxide, temperature,
                                          44e-3 * units::eV)};
 
-  Vec3 electric_field{parse<double>(argv[2]) * units::V / units::m, 0, 0};
-  // std::cout << temperature << ", " << electric_field.x << "\n";
-  Vec3 magnetic_field{0, 0, 0};
   double time_step = 1e-15 * units::s;
   double all_time = 1e-9 * units::s;
-  size_t ansemble_size = 10;
   auto results = simulate(gallium_oxide, scattering_mechanisms, temperature,
                           electric_field, magnetic_field, time_step, all_time,
                           ansemble_size);
