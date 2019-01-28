@@ -24,6 +24,44 @@ private:
   double constant;
 };
 
+struct NonpolarOpticalAbsorptionScattering : public Scattering {
+  NonpolarOpticalAbsorptionScattering(const Material &m, double temperature,
+                                   double energy)
+      : Scattering(m, -energy) {
+    constant = pow(nonpolar_optical_deformation_potential, 2) *
+               pow(m.mass, 1.5) /
+               (sqrt(2) * math::pi * pow(consts::hbar, 2) * density * energy) /
+               (exp(energy / consts::kB / temperature) - 1);
+  }
+  double rate(const Vec3 &p) const {
+    return constant * sqrt(m.energy(p) - energy);
+  }
+
+private:
+  double constant;
+};
+
+struct NonpolarOpticalEmissionScattering : public Scattering {
+  NonpolarOpticalEmissionScattering(const Material &m, double temperature,
+                                   double energy)
+      : Scattering(m, energy) {
+    constant = pow(nonpolar_optical_deformation_potential, 2) *
+               pow(m.mass, 1.5) /
+               (sqrt(2) * math::pi * pow(consts::hbar, 2) * density * energy) *
+               (1 + 1/(exp(energy / consts::kB / temperature) - 1));
+  }
+  double rate(const Vec3 &p) const {
+    double e = m.energy(p);
+    if (e < energy) {
+      return 0;
+    }
+    return constant * sqrt(e - energy);
+  }
+
+private:
+  double constant;
+};
+
 struct PolarOpticalAbsorptionScattering : public Scattering {
   PolarOpticalAbsorptionScattering(const Material &m, double temperature,
                                    double energy)
@@ -98,7 +136,11 @@ int main(int argc, char const *argv[]) {
       new PolarOpticalAbsorptionScattering(gallium_oxide, temperature,
                                            44e-3 * units::eV),
       new PolarOpticalEmissionScattering(gallium_oxide, temperature,
-                                         44e-3 * units::eV)};
+                                         44e-3 * units::eV),
+      new NonpolarOpticalAbsorptionScattering(gallium_oxide, temperature,
+      14e-3 * units::eV),
+      new NonpolarOpticalEmissionScattering(gallium_oxide, temperature,
+      14e-3 * units::eV)};
 
   double time_step = 1e-15 * units::s;
   double all_time = 1e-9 * units::s;
