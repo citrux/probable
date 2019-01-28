@@ -9,11 +9,6 @@ namespace probable {
 
 struct Material {
   double mass;
-  double density;
-  double sound_velocity;
-  double acoustic_deformation_potential;
-  double eps_inf;
-  double eps_static;
 
   double energy(const Vec3 &p) const { return p.dot(p) / (2 * mass); }
   Vec3 velocity(const Vec3 &p) const { return p / mass; }
