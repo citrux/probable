@@ -58,8 +58,14 @@ private:
 struct PolarOpticalAbsorptionScattering : public Scattering {
   PolarOpticalAbsorptionScattering(const Material &m, double temperature, double energy)
       : Scattering(m, -energy) {
+    double n = 1 / (exp(energy / consts::kB / temperature) - 1);
     constant = pow(consts::e, 2) * energy / (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
-               (1 / eps_inf - 1 / eps_static) * 1 / (exp(energy / consts::kB / temperature) - 1);
+               (1 / eps_inf - 1 / eps_static) * n;
+  }
+  PolarOpticalAbsorptionScattering(const Material &m, double temperature, double energy, double c)
+      : Scattering(m, -energy) {
+    double n = 1 / (exp(energy / consts::kB / temperature) - 1);
+    constant = pow(c, 2) / (2 * math::pi * density * energy) * n;
   }
   double rate(const Vec3 &p) const {
     double v = m.velocity(p).length();
@@ -76,9 +82,14 @@ private:
 struct PolarOpticalEmissionScattering : public Scattering {
   PolarOpticalEmissionScattering(const Material &m, double temperature, double energy)
       : Scattering(m, energy) {
+    double n = 1 + 1 / (exp(energy / consts::kB / temperature) - 1);
     constant = pow(consts::e, 2) * energy / (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
-               (1 / eps_inf - 1 / eps_static) *
-               (1 + 1 / (exp(energy / consts::kB / temperature) - 1));
+               (1 / eps_inf - 1 / eps_static) * n;
+  }
+  PolarOpticalEmissionScattering(const Material &m, double temperature, double energy, double c)
+      : Scattering(m, energy) {
+    double n = 1 + 1 / (exp(energy / consts::kB / temperature) - 1);
+    constant = pow(c, 2) / (2 * math::pi * density * energy) * n;
   }
   double rate(const Vec3 &p) const {
     double e = m.energy(p);
@@ -116,12 +127,54 @@ int main(int argc, char const *argv[]) {
 
   std::vector<Scattering *> scattering_mechanisms{
       new AcousticScattering(gallium_oxide, temperature),
-      new PolarOpticalAbsorptionScattering(gallium_oxide, temperature, 21e-3 * units::eV),
-      new PolarOpticalEmissionScattering(gallium_oxide, temperature, 21e-3 * units::eV),
-      new PolarOpticalAbsorptionScattering(gallium_oxide, temperature, 44e-3 * units::eV),
-      new PolarOpticalEmissionScattering(gallium_oxide, temperature, 44e-3 * units::eV),
-      new NonpolarOpticalAbsorptionScattering(gallium_oxide, temperature, 14e-3 * units::eV),
-      new NonpolarOpticalEmissionScattering(gallium_oxide, temperature, 14e-3 * units::eV)};
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 25e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 25e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 29e-3 * units::eV, 1.6e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 29e-3 * units::eV, 1.6e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 35e-3 * units::eV, 0.5e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 35e-3 * units::eV, 0.5e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 43e-3 * units::eV, 1.15e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 43e-3 * units::eV, 1.15e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 50e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 50e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 70e-3 * units::eV, 4.5e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 70e-3 * units::eV, 4.5e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 80e-3 * units::eV, 3.1e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 80e-3 * units::eV, 3.1e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 90e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 90e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 14e-3 * units::eV, 0.15e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 14e-3 * units::eV, 0.15e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 37e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 37e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 60e-3 * units::eV, 3.8e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 60e-3 * units::eV, 3.8e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalAbsorptionScattering(
+          gallium_oxide, temperature, 81e-3 * units::eV, 3.0e2 * units::eV / pow(units::nm, 2)),
+      new PolarOpticalEmissionScattering(
+          gallium_oxide, temperature, 81e-3 * units::eV, 3.0e2 * units::eV / pow(units::nm, 2))};
 
   double time_step = 1e-15 * units::s;
   double all_time = 1e-9 * units::s;

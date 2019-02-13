@@ -57,6 +57,7 @@ const double J = 1 / 1.6e-19;
 const double um = 1;
 const double cm = um * 1e4;
 const double m = um * 1e6;
+const double nm = um * 1e-3;
 
 // time
 const double ps = 1;
