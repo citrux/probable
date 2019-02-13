@@ -66,8 +66,8 @@ struct PolarOpticalAbsorptionScattering : public Scattering {
   PolarOpticalAbsorptionScattering(const Material &m, double temperature,
                                    double energy)
       : Scattering(m, -energy) {
-    constant = pow(consts::e, 2) / (4 * math::pi * consts::eps0) * energy /
-               (2 * math::pi * pow(consts::hbar, 2)) *
+    constant = pow(consts::e, 2) * energy /
+               (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
                (1 / eps_inf - 1 / eps_static) * 1 /
                (exp(energy / consts::kB / temperature) - 1);
   }
@@ -87,8 +87,8 @@ struct PolarOpticalEmissionScattering : public Scattering {
   PolarOpticalEmissionScattering(const Material &m, double temperature,
                                  double energy)
       : Scattering(m, energy) {
-    constant = pow(consts::e, 2) / (4 * math::pi * consts::eps0) * energy /
-               (2 * math::pi * pow(consts::hbar, 2)) *
+    constant = pow(consts::e, 2) * energy /
+               (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
                (1 / eps_inf - 1 / eps_static) *
                (1 + 1 / (exp(energy / consts::kB / temperature) - 1));
   }
