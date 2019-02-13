@@ -4,19 +4,18 @@
 #include <probable.hh>
 
 using namespace probable;
-const double density = 5.88 * units::g / pow(units::cm, 3); // density           
-const double sound_velocity = 6.8e3 * units::m / units::s; // sound velocity
+const double density = 5.88 * units::g / pow(units::cm, 3);     // density
+const double sound_velocity = 6.8e3 * units::m / units::s;      // sound velocity
 const double acoustic_deformation_potential = 16.6 * units::eV; // acoustic deformation potential
-const double nonpolar_optical_deformation_potential = 8.5e8 * units::eV / units::cm; // acoustic deformation potential
-const double eps_inf = 4.21;    // high-frequency dielectric constant
-const double eps_static = 11.4; // static dielectric constant;
+const double nonpolar_optical_deformation_potential =
+    8.5e8 * units::eV / units::cm; // acoustic deformation potential
+const double eps_inf = 4.21;       // high-frequency dielectric constant
+const double eps_static = 11.4;    // static dielectric constant;
 
 struct AcousticScattering : public Scattering {
   AcousticScattering(const Material &m, double temperature) : Scattering(m, 0) {
-    constant = pow(acoustic_deformation_potential, 2) * consts::kB *
-               temperature * m.mass /
-               (math::pi * pow(consts::hbar, 4) * density *
-                pow(sound_velocity, 2));
+    constant = pow(acoustic_deformation_potential, 2) * consts::kB * temperature * m.mass /
+               (math::pi * pow(consts::hbar, 4) * density * pow(sound_velocity, 2));
   }
   double rate(const Vec3 &p) const { return constant * p.length(); }
 
@@ -25,30 +24,24 @@ private:
 };
 
 struct NonpolarOpticalAbsorptionScattering : public Scattering {
-  NonpolarOpticalAbsorptionScattering(const Material &m, double temperature,
-                                   double energy)
+  NonpolarOpticalAbsorptionScattering(const Material &m, double temperature, double energy)
       : Scattering(m, -energy) {
-    constant = pow(nonpolar_optical_deformation_potential, 2) *
-               pow(m.mass, 1.5) /
+    constant = pow(nonpolar_optical_deformation_potential, 2) * pow(m.mass, 1.5) /
                (sqrt(2) * math::pi * pow(consts::hbar, 2) * density * energy) /
                (exp(energy / consts::kB / temperature) - 1);
   }
-  double rate(const Vec3 &p) const {
-    return constant * sqrt(m.energy(p) - energy);
-  }
+  double rate(const Vec3 &p) const { return constant * sqrt(m.energy(p) - energy); }
 
 private:
   double constant;
 };
 
 struct NonpolarOpticalEmissionScattering : public Scattering {
-  NonpolarOpticalEmissionScattering(const Material &m, double temperature,
-                                   double energy)
+  NonpolarOpticalEmissionScattering(const Material &m, double temperature, double energy)
       : Scattering(m, energy) {
-    constant = pow(nonpolar_optical_deformation_potential, 2) *
-               pow(m.mass, 1.5) /
+    constant = pow(nonpolar_optical_deformation_potential, 2) * pow(m.mass, 1.5) /
                (sqrt(2) * math::pi * pow(consts::hbar, 2) * density * energy) *
-               (1 + 1/(exp(energy / consts::kB / temperature) - 1));
+               (1 + 1 / (exp(energy / consts::kB / temperature) - 1));
   }
   double rate(const Vec3 &p) const {
     double e = m.energy(p);
@@ -63,13 +56,10 @@ private:
 };
 
 struct PolarOpticalAbsorptionScattering : public Scattering {
-  PolarOpticalAbsorptionScattering(const Material &m, double temperature,
-                                   double energy)
+  PolarOpticalAbsorptionScattering(const Material &m, double temperature, double energy)
       : Scattering(m, -energy) {
-    constant = pow(consts::e, 2) * energy /
-               (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
-               (1 / eps_inf - 1 / eps_static) * 1 /
-               (exp(energy / consts::kB / temperature) - 1);
+    constant = pow(consts::e, 2) * energy / (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
+               (1 / eps_inf - 1 / eps_static) * 1 / (exp(energy / consts::kB / temperature) - 1);
   }
   double rate(const Vec3 &p) const {
     double v = m.velocity(p).length();
@@ -84,11 +74,9 @@ private:
 };
 
 struct PolarOpticalEmissionScattering : public Scattering {
-  PolarOpticalEmissionScattering(const Material &m, double temperature,
-                                 double energy)
+  PolarOpticalEmissionScattering(const Material &m, double temperature, double energy)
       : Scattering(m, energy) {
-    constant = pow(consts::e, 2) * energy /
-               (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
+    constant = pow(consts::e, 2) * energy / (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
                (1 / eps_inf - 1 / eps_static) *
                (1 + 1 / (exp(energy / consts::kB / temperature) - 1));
   }
@@ -115,8 +103,7 @@ template <typename T> T parse(const std::string &s) {
 int main(int argc, char const *argv[]) {
   if (argc != 4) {
     std::cout << "Invalid number of arguments\n";
-    std::cout << "Usage: " << argv[0]
-              << " <ansemble size> <temperature> <electric field>\n";
+    std::cout << "Usage: " << argv[0] << " <ansemble size> <temperature> <electric field>\n";
     return 1;
   }
 
@@ -129,23 +116,22 @@ int main(int argc, char const *argv[]) {
 
   std::vector<Scattering *> scattering_mechanisms{
       new AcousticScattering(gallium_oxide, temperature),
-      new PolarOpticalAbsorptionScattering(gallium_oxide, temperature,
-                                           21e-3 * units::eV),
-      new PolarOpticalEmissionScattering(gallium_oxide, temperature,
-                                         21e-3 * units::eV),
-      new PolarOpticalAbsorptionScattering(gallium_oxide, temperature,
-                                           44e-3 * units::eV),
-      new PolarOpticalEmissionScattering(gallium_oxide, temperature,
-                                         44e-3 * units::eV),
-      new NonpolarOpticalAbsorptionScattering(gallium_oxide, temperature,
-      14e-3 * units::eV),
-      new NonpolarOpticalEmissionScattering(gallium_oxide, temperature,
-      14e-3 * units::eV)};
+      new PolarOpticalAbsorptionScattering(gallium_oxide, temperature, 21e-3 * units::eV),
+      new PolarOpticalEmissionScattering(gallium_oxide, temperature, 21e-3 * units::eV),
+      new PolarOpticalAbsorptionScattering(gallium_oxide, temperature, 44e-3 * units::eV),
+      new PolarOpticalEmissionScattering(gallium_oxide, temperature, 44e-3 * units::eV),
+      new NonpolarOpticalAbsorptionScattering(gallium_oxide, temperature, 14e-3 * units::eV),
+      new NonpolarOpticalEmissionScattering(gallium_oxide, temperature, 14e-3 * units::eV)};
 
   double time_step = 1e-15 * units::s;
   double all_time = 1e-9 * units::s;
-  auto results = simulate(gallium_oxide, scattering_mechanisms, temperature,
-                          electric_field, magnetic_field, time_step, all_time,
+  auto results = simulate(gallium_oxide,
+                          scattering_mechanisms,
+                          temperature,
+                          electric_field,
+                          magnetic_field,
+                          time_step,
+                          all_time,
                           ansemble_size);
   std::cout << results;
   return 0;

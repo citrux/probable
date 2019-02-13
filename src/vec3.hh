@@ -5,13 +5,10 @@
 
 struct Vec3 {
   double x, y, z;
-  double dot(const Vec3 &other) const {
-    return x * other.x + y * other.y + z * other.z;
-  }
+  double dot(const Vec3 &other) const { return x * other.x + y * other.y + z * other.z; }
   double length() const { return std::sqrt(this->dot(*this)); }
   Vec3 cross(const Vec3 &other) const {
-    return {y * other.z - z * other.y, z * other.x - x * other.z,
-            x * other.y - y * other.z};
+    return {y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.z};
   }
   Vec3 sqrt() const { return {std::sqrt(x), std::sqrt(y), std::sqrt(z)}; }
   Vec3 &operator+=(const Vec3 &other) {

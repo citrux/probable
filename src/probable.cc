@@ -46,9 +46,13 @@ std::ostream &operator<<(std::ostream &s, const Results &r) {
 }
 
 Results simulate(const Material &material,
-                 const std::vector<Scattering *> mechanisms, double temperature,
-                 const Vec3 &electric_field, const Vec3 &magnetic_field,
-                 double time_step, double all_time, size_t ansemble_size) {
+                 const std::vector<Scattering *> mechanisms,
+                 double temperature,
+                 const Vec3 &electric_field,
+                 const Vec3 &magnetic_field,
+                 double time_step,
+                 double all_time,
+                 size_t ansemble_size) {
   Results results(ansemble_size);
   size_t steps = all_time / time_step + 1;
 #pragma omp parallel for
@@ -68,8 +72,7 @@ Results simulate(const Material &material,
     for (size_t j = 0; j < steps; ++j) {
       Vec3 v = material.velocity(p);
       average_velocity += (v - average_velocity) / (j + 1);
-      average_power +=
-          (v.dot(electric_field) - results.average_power[i]) / (j + 1);
+      average_power += (v.dot(electric_field) - results.average_power[i]) / (j + 1);
       for (size_t k = 0; k < mechanisms.size(); ++k) {
         free_flight[k] -= mechanisms[k]->rate(p) * time_step;
         if (free_flight[k] < 0) {

@@ -30,16 +30,19 @@ struct Results {
   std::vector<std::vector<size_t>> scatterings;
   Results() {}
   Results(size_t size)
-      : average_velocity(size, Vec3()), average_power(size, 0),
-        scatterings(size) {}
+      : average_velocity(size, Vec3()), average_power(size, 0), scatterings(size) {}
 
   friend std::ostream &operator<<(std::ostream &s, const Results &r);
 };
 
 Results simulate(const Material &material,
-                 const std::vector<Scattering *> mechanisms, double temperature,
-                 const Vec3 &electric_field, const Vec3 &magnetic_field,
-                 double time_step, double all_time, size_t ansemble_size);
+                 const std::vector<Scattering *> mechanisms,
+                 double temperature,
+                 const Vec3 &electric_field,
+                 const Vec3 &magnetic_field,
+                 double time_step,
+                 double all_time,
+                 size_t ansemble_size);
 
 // Thread-safe Mersenne twister-based rng
 double uniform();
