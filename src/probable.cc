@@ -99,20 +99,25 @@ std::vector<Results> simulate(const Material &material,
     for (double &l : free_flight) {
       l = -log(uniform());
     }
+
     for (size_t j = 0; j < steps; ++j) {
-      Vec3 v = material.velocity(p);
+      Vec3 p_ = p;
+      Vec3 v = material.velocity(p_);
+      double e = material.energy(p_);
       size_t scattering_mechanism = 0; // means no scattering
       for (size_t k = 0; k < mechanisms.size(); ++k) {
-        free_flight[k] -= mechanisms[k]->rate(p) * time_step;
+        free_flight[k] -= mechanisms[k]->rate(p_) * time_step;
         if (free_flight[k] < 0) {
-          p = mechanisms[k]->scatter(p);
+          p = mechanisms[k]->scatter(p_);
           free_flight[k] = -log(uniform());
           scattering_mechanism = k + 1; // enumerate mechanisms from 1
           break;
         }
       }
-      result.append(j * time_step, p, v, material.energy(p), scattering_mechanism);
-      p += -consts::e * (electric_field + v.cross(magnetic_field)) * time_step;
+      result.append(j * time_step, p_, v, e, scattering_mechanism);
+      if (not scattering_mechanism) {
+        p += -consts::e * (electric_field + v.cross(magnetic_field)) * time_step;
+      }
     }
   }
   return results;

@@ -194,7 +194,7 @@ int main(int argc, char const *argv[]) {
       new PolarOpticalEmissionScattering(
           gallium_oxide, temperature, 81e-3 * units::eV, 3.0e2 * units::eV / pow(units::nm, 2))};
 
-  double time_step = 1e-15 * units::s;
+  double time_step = 1e-16 * units::s;
   double all_time = 1e-9 * units::s;
 
   // print info on stdout
@@ -209,16 +209,16 @@ int main(int argc, char const *argv[]) {
     std::cout << i + 1 << ": " << *scattering_mechanisms[i] << '\n';
   }
 
-  auto results =
-      simulate(gallium_oxide,
-               scattering_mechanisms,
-               temperature,
-               electric_field,
-               magnetic_field,
-               time_step,
-               all_time,
-               ansemble_size,
-               DumpFlags(DumpFlags::time | DumpFlags::energy | DumpFlags::scattering | DumpFlags::on_scatterings));
+  auto results = simulate(gallium_oxide,
+                          scattering_mechanisms,
+                          temperature,
+                          electric_field,
+                          magnetic_field,
+                          time_step,
+                          all_time,
+                          ansemble_size,
+                          DumpFlags(DumpFlags::time | DumpFlags::energy | DumpFlags::scattering |
+                                    DumpFlags::on_scatterings));
   for (std::size_t i = 0; i < results.size(); ++i) {
     std::stringstream ss;
     ss << std::setw(6) << std::setfill('0') << i << ".dat";
