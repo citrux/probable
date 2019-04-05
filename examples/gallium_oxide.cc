@@ -1,3 +1,5 @@
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 
@@ -21,6 +23,21 @@ struct AcousticScattering : public Scattering {
 
 private:
   double constant;
+};
+
+struct ImpurityScattering : public Scattering {
+  ImpurityScattering(const Material &m, double temperature, double z, double nci)
+      : Scattering(m, 0) {
+    double r02 = (1.81386e-10 / (temperature / units::K) + 7.20169e-13) * pow(units::cm, 2);
+    constant = 2 * nci / math::pi * pow(z * r02 / consts::eps0 / eps_static, 2) *
+               pow(consts::e / consts::hbar, 4) * m.mass;
+    p02inv = r02 * pow(2 / consts::hbar, 2);
+  }
+  double rate(const Vec3 &p) const { return constant * p.length() / (1 + p.dot(p) * p02inv); }
+
+private:
+  double constant;
+  double p02inv;
 };
 
 struct NonpolarOpticalAbsorptionScattering : public Scattering {
@@ -127,6 +144,7 @@ int main(int argc, char const *argv[]) {
 
   std::vector<Scattering *> scattering_mechanisms{
       new AcousticScattering(gallium_oxide, temperature),
+      new ImpurityScattering(gallium_oxide, temperature, 1, 1e16 / pow(units::cm, 3)),
       new PolarOpticalAbsorptionScattering(
           gallium_oxide, temperature, 25e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
       new PolarOpticalEmissionScattering(
@@ -178,14 +196,34 @@ int main(int argc, char const *argv[]) {
 
   double time_step = 1e-15 * units::s;
   double all_time = 1e-9 * units::s;
-  auto results = simulate(gallium_oxide,
-                          scattering_mechanisms,
-                          temperature,
-                          electric_field,
-                          magnetic_field,
-                          time_step,
-                          all_time,
-                          ansemble_size);
-  std::cout << results;
+
+  // print info on stdout
+  std::cout << "Ansemble size:    " << ansemble_size << "\n";
+  std::cout << "Time step:        " << time_step / units::s << " s\n";
+  std::cout << "Simulation time:  " << all_time / units::s << " s\n";
+  std::cout << "Temperature:      " << temperature / units::K << " K\n";
+  std::cout << "Electric field:   " << electric_field / units::V * units::m << " V/m\n";
+  std::cout << "Magnetic field:   " << magnetic_field / units::T << " T\n";
+  std::cout << "Scattering mechanisms:\n";
+  for (size_t i = 0; i < scattering_mechanisms.size(); ++i) {
+    std::cout << i + 1 << ": " << *scattering_mechanisms[i] << '\n';
+  }
+
+  auto results =
+      simulate(gallium_oxide,
+               scattering_mechanisms,
+               temperature,
+               electric_field,
+               magnetic_field,
+               time_step,
+               all_time,
+               ansemble_size,
+               DumpFlags(DumpFlags::time | DumpFlags::energy | DumpFlags::scattering | DumpFlags::on_scatterings));
+  for (std::size_t i = 0; i < results.size(); ++i) {
+    std::stringstream ss;
+    ss << std::setw(6) << std::setfill('0') << i << ".dat";
+    std::ofstream f(ss.str().c_str());
+    f << results[i];
+  }
   return 0;
 }

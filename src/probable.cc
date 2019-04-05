@@ -1,3 +1,4 @@
+#include <iostream>
 #include <omp.h>
 #include <random>
 
@@ -30,40 +31,69 @@ Vec3 Scattering::scatter(const Vec3 &p) const {
   return {r * sin_theta * cos(phi), r * sin_theta * sin(phi), r * cos_theta};
 }
 
+void Results::append(double t, const Vec3 &p, const Vec3 &v, double e, size_t s) {
+  if (not(flags & DumpFlags::on_scatterings) or s) {
+    if (flags & DumpFlags::scattering) {
+      scatterings.push_back(s);
+    }
+    if (flags & DumpFlags::time) {
+      ts.push_back(t);
+    }
+    if (flags & DumpFlags::momentum) {
+      momentums.push_back(p);
+    }
+    if (flags & DumpFlags::velocity) {
+      velocities.push_back(v);
+    }
+    if (flags & DumpFlags::energy) {
+      energies.push_back(e);
+    }
+    size += 1;
+  }
+}
+
 std::ostream &operator<<(std::ostream &s, const Results &r) {
-  size_t size = r.average_velocity.size();
-  for (size_t i = 0; i < size; ++i) {
-    s << r.average_velocity[i].x / units::m * units::s << " "
-      << r.average_velocity[i].y / units::m * units::s << " "
-      << r.average_velocity[i].z / units::m * units::s << " "
-      << r.average_power[i] / units::J * units::s;
-    for (size_t v : r.scatterings[i]) {
-      s << " " << v;
+  for (size_t i = 0; i < r.size; ++i) {
+    if (r.flags & DumpFlags::time) {
+      s << r.ts[i] / units::s << " ";
+    }
+    if (r.flags & DumpFlags::momentum) {
+      s << r.momentums[i].x << " ";
+      s << r.momentums[i].y << " ";
+      s << r.momentums[i].z << " ";
+    }
+    if (r.flags & DumpFlags::velocity) {
+      s << r.velocities[i].x / units::m * units::s << " ";
+      s << r.velocities[i].y / units::m * units::s << " ";
+      s << r.velocities[i].z / units::m * units::s << " ";
+    }
+    if (r.flags & DumpFlags::energy) {
+      s << r.energies[i] / units::eV << " ";
+    }
+    if (r.flags & DumpFlags::scattering) {
+      s << r.scatterings[i];
     }
     s << "\n";
   }
   return s;
 }
 
-Results simulate(const Material &material,
-                 const std::vector<Scattering *> mechanisms,
-                 double temperature,
-                 const Vec3 &electric_field,
-                 const Vec3 &magnetic_field,
-                 double time_step,
-                 double all_time,
-                 size_t ansemble_size) {
-  Results results(ansemble_size);
+std::vector<Results> simulate(const Material &material,
+                              const std::vector<Scattering *> mechanisms,
+                              double temperature,
+                              const Vec3 &electric_field,
+                              const Vec3 &magnetic_field,
+                              double time_step,
+                              double all_time,
+                              size_t ansemble_size,
+                              DumpFlags flags) {
+  std::vector<Results> results(ansemble_size);
   size_t steps = all_time / time_step + 1;
+  size_t alloc = (flags & DumpFlags::on_scatterings) ? steps / 10 : steps;
 #pragma omp parallel for
   for (size_t i = 0; i < ansemble_size; ++i) {
-    Vec3 &average_velocity = results.average_velocity[i];
-    double &average_power = results.average_power[i];
-    std::vector<size_t> &scatterings = results.scatterings[i];
-
-    average_velocity = {0, 0, 0};
-    average_power = 0;
-    scatterings.assign(mechanisms.size(), 0);
+    Results &result = results[i];
+    result = Results(alloc, flags);
     Vec3 p = material.create_particle(temperature);
     std::vector<double> free_flight(mechanisms.size(), 0);
     for (double &l : free_flight) {
@@ -71,17 +101,17 @@ Results simulate(const Material &material,
     }
     for (size_t j = 0; j < steps; ++j) {
       Vec3 v = material.velocity(p);
-      average_velocity += (v - average_velocity) / (j + 1);
-      average_power += (v.dot(electric_field) - results.average_power[i]) / (j + 1);
+      size_t scattering_mechanism = 0; // means no scattering
       for (size_t k = 0; k < mechanisms.size(); ++k) {
         free_flight[k] -= mechanisms[k]->rate(p) * time_step;
         if (free_flight[k] < 0) {
           p = mechanisms[k]->scatter(p);
-          scatterings[k] += 1;
           free_flight[k] = -log(uniform());
+          scattering_mechanism = k + 1; // enumerate mechanisms from 1
           break;
         }
       }
+      result.append(j * time_step, p, v, material.energy(p), scattering_mechanism);
       p += -consts::e * (electric_field + v.cross(magnetic_field)) * time_step;
     }
   }
