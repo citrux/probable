@@ -2,6 +2,7 @@
 
 #include <ostream>
 #include <vector>
+#include <typeinfo>
 
 #include <vec3.hh>
 
