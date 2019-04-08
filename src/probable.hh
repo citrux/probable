@@ -1,8 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <ostream>
-#include <vector>
 #include <typeinfo>
+#include <vector>
 
 #include <vec3.hh>
 
@@ -78,20 +79,22 @@ inline std::ostream &operator<<(std::ostream &s, const Scattering &sc) {
 
 enum DumpFlags {
   // contents
-  time = 1,
-  momentum = 2,
-  energy = 4,
-  velocity = 8,
-  scattering = 16,
-  all = 31,
+  number = 1,
+  time = number << 1,
+  momentum = time << 1,
+  energy = momentum << 1,
+  velocity = energy << 1,
+  scattering = velocity << 1,
+  all = number | time | momentum | energy | velocity | scattering,
   // frequency
   // without this flag it will dump on every step
-  on_scatterings = 32,
+  on_scatterings = scattering << 1,
 };
 
 struct Results {
   size_t size;
   DumpFlags flags;
+  std::vector<uint32_t> ns;
   std::vector<double> ts;
   std::vector<Vec3> momentums;
   std::vector<Vec3> velocities;
@@ -99,14 +102,15 @@ struct Results {
   std::vector<size_t> scatterings;
   Results() {}
   Results(size_t cap, DumpFlags flags = DumpFlags::all)
-      : size(0), flags(flags), ts(), momentums(), velocities(), energies(), scatterings() {
+      : size(0), flags(flags), ns(), ts(), momentums(), velocities(), energies(), scatterings() {
+    ns.reserve(cap);
     ts.reserve(cap);
     momentums.reserve(cap);
     velocities.reserve(cap);
     energies.reserve(cap);
     scatterings.reserve(cap);
   }
-  void append(double t, const Vec3 &p, const Vec3 &v, double e, size_t s);
+  void append(uint32_t n, double t, const Vec3 &p, const Vec3 &v, double e, size_t s);
   friend std::ostream &operator<<(std::ostream &s, const Results &r);
 };
 

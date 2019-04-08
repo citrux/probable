@@ -217,7 +217,7 @@ int main(int argc, char const *argv[]) {
                           time_step,
                           all_time,
                           ansemble_size,
-                          DumpFlags(DumpFlags::time | DumpFlags::energy | DumpFlags::scattering |
+                          DumpFlags(DumpFlags::number | DumpFlags::energy | DumpFlags::scattering |
                                     DumpFlags::on_scatterings));
   for (std::size_t i = 0; i < results.size(); ++i) {
     std::stringstream ss;

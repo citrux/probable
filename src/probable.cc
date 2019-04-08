@@ -31,10 +31,13 @@ Vec3 Scattering::scatter(const Vec3 &p) const {
   return {r * sin_theta * cos(phi), r * sin_theta * sin(phi), r * cos_theta};
 }
 
-void Results::append(double t, const Vec3 &p, const Vec3 &v, double e, size_t s) {
+void Results::append(uint32_t n, double t, const Vec3 &p, const Vec3 &v, double e, size_t s) {
   if (not(flags & DumpFlags::on_scatterings) or s) {
     if (flags & DumpFlags::scattering) {
       scatterings.push_back(s);
+    }
+    if (flags & DumpFlags::number) {
+      ns.push_back(n);
     }
     if (flags & DumpFlags::time) {
       ts.push_back(t);
@@ -54,6 +57,9 @@ void Results::append(double t, const Vec3 &p, const Vec3 &v, double e, size_t s)
 
 std::ostream &operator<<(std::ostream &s, const Results &r) {
   for (size_t i = 0; i < r.size; ++i) {
+    if (r.flags & DumpFlags::number) {
+      s << r.ns[i] << " ";
+    }
     if (r.flags & DumpFlags::time) {
       s << r.ts[i] / units::s << " ";
     }
@@ -114,7 +120,7 @@ std::vector<Results> simulate(const Material &material,
           break;
         }
       }
-      result.append(j * time_step, p_, v, e, scattering_mechanism);
+      result.append(j, j * time_step, p_, v, e, scattering_mechanism);
       if (not scattering_mechanism) {
         p += -consts::e * (electric_field + v.cross(magnetic_field)) * time_step;
       }
