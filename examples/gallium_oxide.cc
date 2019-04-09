@@ -26,9 +26,25 @@ private:
 };
 
 struct ImpurityScattering : public Scattering {
-  ImpurityScattering(const Material &m, double temperature, double z, double nci)
+  ImpurityScattering(const Material &m, double temperature)
       : Scattering(m, 0) {
-    double r02 = (1.81386e-10 / (temperature / units::K) + 7.20169e-13) * pow(units::cm, 2);
+    const double z = 1;
+    const double t = temperature / units::K;
+    
+    // аппроксимация радиуса экранирования
+    const double a = 3.36e-10;
+    const double b = 65.5;
+    const double c = 1.66e-14;
+    const double d = 2.11e-12;
+    const double r02 = (a / (t - b) + c * t + d) * pow(units::cm, 2);
+
+    // концентрация электронов
+    const double n = 1e17 * (0.46 * atan(0.012 * t - 1.47) + 1.16) * pow(units::cm, -3);
+    // концентрация акцепторов
+    const double n_a = 4.2e16;
+    // концентрация ионизированных примесей
+    const double nci = n + 2 * n_a;
+    
     constant = 2 * nci / math::pi * pow(z * r02 / consts::eps0 / eps_static, 2) *
                pow(consts::e / consts::hbar, 4) * m.mass;
     p02inv = r02 * pow(2 / consts::hbar, 2);
@@ -144,7 +160,7 @@ int main(int argc, char const *argv[]) {
 
   std::vector<Scattering *> scattering_mechanisms{
       new AcousticScattering(gallium_oxide, temperature),
-      new ImpurityScattering(gallium_oxide, temperature, 1, 1e16 / pow(units::cm, 3)),
+      new ImpurityScattering(gallium_oxide, temperature),
       new PolarOpticalAbsorptionScattering(
           gallium_oxide, temperature, 25e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
       new PolarOpticalEmissionScattering(
