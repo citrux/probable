@@ -32,6 +32,10 @@ Vec3 Scattering::scatter(const Vec3 &p) const {
 }
 
 void Results::append(uint32_t n, double t, const Vec3 &p, const Vec3 &v, double e, size_t s) {
+  average_velocity += (v - average_velocity) / (n + 1);
+  if (s) {
+    scattering_count[s - 1] += 1;
+  }
   if (not(flags & DumpFlags::on_scatterings) or s) {
     if (flags & DumpFlags::scattering) {
       scatterings.push_back(s);
@@ -56,6 +60,9 @@ void Results::append(uint32_t n, double t, const Vec3 &p, const Vec3 &v, double 
 }
 
 std::ostream &operator<<(std::ostream &s, const Results &r) {
+  if (r.flags == DumpFlags::none) {
+    return s;
+  }
   for (size_t i = 0; i < r.size; ++i) {
     if (r.flags & DumpFlags::number) {
       s << r.ns[i] << " ";
@@ -99,7 +106,11 @@ std::vector<Results> simulate(const Material &material,
 #pragma omp parallel for
   for (size_t i = 0; i < ansemble_size; ++i) {
     Results &result = results[i];
-    result = Results(alloc, flags);
+    result.average_velocity = {0, 0, 0};
+    result.scattering_count.assign(mechanisms.size(), 0);
+    if (flags != DumpFlags::none) {
+      result = Results(alloc, flags);
+    }
     Vec3 p = material.create_particle(temperature);
     std::vector<double> free_flight(mechanisms.size(), 0);
     for (double &l : free_flight) {

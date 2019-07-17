@@ -44,7 +44,7 @@ struct ImpurityScattering : public Scattering {
     // концентрация ионизированных примесей
     const double nci = n + 2 * n_a;
 
-    constant = 2 * nci / math::pi * pow(z * r02 / consts::eps0 / eps_static, 2) *
+    constant = 2 * nci / math::pi * pow(z * r02 / eps_static, 2) *
                pow(consts::e / consts::hbar, 4) * m.mass;
     p02inv = r02 * pow(2 / consts::hbar, 2);
   }
@@ -143,6 +143,22 @@ template <typename T> T parse(const std::string &s) {
   return result;
 }
 
+template <typename T> std::ostream &operator<<(std::ostream &s, std::vector<T> t) {
+  s << "[";
+  for (std::size_t i = 0; i < t.size(); i++) {
+    s << t[i] << (i == t.size() - 1 ? "" : ", ");
+  }
+  return s << "]" << std::endl;
+}
+
+template <typename T> T sum(std::vector<T> t) {
+  T s{};
+  for (auto &v : t) {
+    s += v;
+  }
+  return s;
+}
+
 int main(int argc, char const *argv[]) {
   if (argc != 4) {
     std::cout << "Invalid number of arguments\n";
@@ -210,7 +226,7 @@ int main(int argc, char const *argv[]) {
           gallium_oxide, temperature, 81e-3 * units::eV, 3.0e2 * units::eV / pow(units::nm, 2))};
 
   double time_step = 1e-16 * units::s;
-  double all_time = 1e-9 * units::s;
+  double all_time = 1e-11 * units::s;
 
   // print info on stdout
   std::cout << "Ansemble size:    " << ansemble_size << "\n";
@@ -223,7 +239,6 @@ int main(int argc, char const *argv[]) {
   for (size_t i = 0; i < scattering_mechanisms.size(); ++i) {
     std::cout << i + 1 << ": " << *scattering_mechanisms[i] << '\n';
   }
-
   auto results = simulate(gallium_oxide,
                           scattering_mechanisms,
                           temperature,
@@ -233,11 +248,22 @@ int main(int argc, char const *argv[]) {
                           all_time,
                           ansemble_size,
                           DumpFlags(DumpFlags::none));
+  Vec3 average_velocity;
+  Vec3 average_velocity2;
+  std::vector<double> scattering_rates(scattering_mechanisms.size(), 0);
   for (std::size_t i = 0; i < results.size(); ++i) {
-    std::stringstream ss;
-    ss << std::setw(6) << std::setfill('0') << i << ".dat";
-    std::ofstream f(ss.str().c_str());
-    f << results[i];
+    average_velocity += (results[i].average_velocity - average_velocity) / (i + 1);
+    average_velocity2 +=
+        (results[i].average_velocity * results[i].average_velocity - average_velocity2) / (i + 1);
+    for (std::size_t j = 0; j < scattering_mechanisms.size(); ++j) {
+      scattering_rates[j] +=
+          (results[i].scattering_count[j] / all_time * units::s - scattering_rates[j]) / (i + 1);
+    }
   }
+  Vec3 std_velocity = (average_velocity2 - average_velocity * average_velocity).sqrt();
+  std::cout << "Average velocity: " << average_velocity << '\n';
+  std::cout << "             std: " << std_velocity << '\n';
+  std::cout << "Scattering rates: " << scattering_rates << '\n';
+  std::cout << "           Total: " << sum(scattering_rates) << '\n';
   return 0;
 }

@@ -99,12 +99,14 @@ enum DumpFlags {
 struct Results {
   size_t size;
   DumpFlags flags;
+  Vec3 average_velocity;
+  std::vector<uint32_t> scattering_count;
   std::vector<uint32_t> ns;
   std::vector<double> ts;
   std::vector<Vec3> momentums;
   std::vector<Vec3> velocities;
   std::vector<double> energies;
-  std::vector<size_t> scatterings;
+  std::vector<uint32_t> scatterings;
   Results() {}
   Results(size_t cap, DumpFlags flags = DumpFlags::none)
       : size(0), flags(flags), ns(), ts(), momentums(), velocities(), energies(), scatterings() {
