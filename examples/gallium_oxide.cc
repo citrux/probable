@@ -31,14 +31,14 @@ struct ImpurityScattering : public Scattering {
     const double t = temperature / units::K;
 
     // аппроксимация радиуса экранирования
-    const double a = 3.36e-10;
-    const double b = 65.5;
-    const double c = 1.66e-14;
-    const double d = 2.11e-12;
+    const double a = 2.73e-11;
+    const double b = 24.11;
+    const double c = 5.69e-15;
+    const double d = -1.99e-13;
     const double r02 = (a / (t - b) + c * t + d) * pow(units::cm, 2);
 
     // концентрация электронов
-    const double n = 1e17 * (0.46 * atan(0.012 * t - 1.47) + 1.16) * pow(units::cm, -3);
+    const double n = 1e17 * (0.44 * atan(0.021 * t - 2.05) + 0.35) * pow(units::cm, -3);
     // концентрация акцепторов
     const double n_a = 4.2e16;
     // концентрация ионизированных примесей
@@ -232,8 +232,7 @@ int main(int argc, char const *argv[]) {
                           time_step,
                           all_time,
                           ansemble_size,
-                          DumpFlags(DumpFlags::number | DumpFlags::energy | DumpFlags::scattering |
-                                    DumpFlags::on_scatterings));
+                          DumpFlags(DumpFlags::none));
   for (std::size_t i = 0; i < results.size(); ++i) {
     std::stringstream ss;
     ss << std::setw(6) << std::setfill('0') << i << ".dat";

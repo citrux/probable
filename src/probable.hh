@@ -83,6 +83,7 @@ inline std::ostream &operator<<(std::ostream &s, const Scattering &sc) {
 
 enum DumpFlags {
   // contents
+  none = 0,
   number = 1,
   time = number << 1,
   momentum = time << 1,
@@ -105,7 +106,7 @@ struct Results {
   std::vector<double> energies;
   std::vector<size_t> scatterings;
   Results() {}
-  Results(size_t cap, DumpFlags flags = DumpFlags::all)
+  Results(size_t cap, DumpFlags flags = DumpFlags::none)
       : size(0), flags(flags), ns(), ts(), momentums(), velocities(), energies(), scatterings() {
     ns.reserve(cap);
     ts.reserve(cap);
