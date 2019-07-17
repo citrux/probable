@@ -40,11 +40,11 @@ struct ImpurityScattering : public Scattering {
     // концентрация электронов
     const double n = 1e17 * (0.44 * atan(0.021 * t - 2.05) + 0.35) * pow(units::cm, -3);
     // концентрация акцепторов
-    const double n_a = 4.2e16;
+    const double n_a = 4.2e16 * pow(units::cm, -3);
     // концентрация ионизированных примесей
     const double nci = n + 2 * n_a;
 
-    constant = 2 * nci / math::pi * pow(z * r02 / eps_static, 2) *
+    constant = nci / math::pi * pow(z * r02 / consts::eps0 / eps_static, 2) *
                pow(consts::e / consts::hbar, 4) * m.mass;
     p02inv = r02 * pow(2 / consts::hbar, 2);
   }
