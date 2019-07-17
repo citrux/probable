@@ -26,11 +26,10 @@ private:
 };
 
 struct ImpurityScattering : public Scattering {
-  ImpurityScattering(const Material &m, double temperature)
-      : Scattering(m, 0) {
+  ImpurityScattering(const Material &m, double temperature) : Scattering(m, 0) {
     const double z = 1;
     const double t = temperature / units::K;
-    
+
     // аппроксимация радиуса экранирования
     const double a = 3.36e-10;
     const double b = 65.5;
@@ -44,7 +43,7 @@ struct ImpurityScattering : public Scattering {
     const double n_a = 4.2e16;
     // концентрация ионизированных примесей
     const double nci = n + 2 * n_a;
-    
+
     constant = 2 * nci / math::pi * pow(z * r02 / consts::eps0 / eps_static, 2) *
                pow(consts::e / consts::hbar, 4) * m.mass;
     p02inv = r02 * pow(2 / consts::hbar, 2);

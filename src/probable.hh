@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cxxabi.h>
 #include <ostream>
 #include <typeinfo>
 #include <vector>
@@ -73,7 +74,10 @@ struct Scattering {
 };
 
 inline std::ostream &operator<<(std::ostream &s, const Scattering &sc) {
-  s << typeid(sc).name() << " " << sc.energy / units::eV << " eV";
+  int status;
+  char *realname = abi::__cxa_demangle(typeid(sc).name(), 0, 0, &status);
+  s << realname << " " << sc.energy;
+  free(realname);
   return s;
 }
 
