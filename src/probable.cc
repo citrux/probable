@@ -106,11 +106,11 @@ std::vector<Results> simulate(const Material &material,
 #pragma omp parallel for
   for (size_t i = 0; i < ensemble_size; ++i) {
     Results &result = results[i];
-    result.average_velocity = {0, 0, 0};
-    result.scattering_count.assign(mechanisms.size(), 0);
     if (flags != DumpFlags::none) {
       result = Results(alloc, flags);
     }
+    result.average_velocity = {0, 0, 0};
+    result.scattering_count.assign(mechanisms.size(), 0);
     Vec3 p = material.create_particle(temperature);
     std::vector<double> free_flight(mechanisms.size(), 0);
     for (double &l : free_flight) {
