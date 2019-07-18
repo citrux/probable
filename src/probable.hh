@@ -128,7 +128,7 @@ std::vector<Results> simulate(const Material &material,
                               const Vec3 &magnetic_field,
                               double time_step,
                               double all_time,
-                              size_t ansemble_size,
+                              size_t ensemble_size,
                               DumpFlags flags = DumpFlags::all);
 
 // Thread-safe Mersenne twister-based rng

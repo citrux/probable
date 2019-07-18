@@ -98,13 +98,13 @@ std::vector<Results> simulate(const Material &material,
                               const Vec3 &magnetic_field,
                               double time_step,
                               double all_time,
-                              size_t ansemble_size,
+                              size_t ensemble_size,
                               DumpFlags flags) {
-  std::vector<Results> results(ansemble_size);
+  std::vector<Results> results(ensemble_size);
   size_t steps = all_time / time_step + 1;
   size_t alloc = (flags & DumpFlags::on_scatterings) ? steps / 10 : steps;
 #pragma omp parallel for
-  for (size_t i = 0; i < ansemble_size; ++i) {
+  for (size_t i = 0; i < ensemble_size; ++i) {
     Results &result = results[i];
     result.average_velocity = {0, 0, 0};
     result.scattering_count.assign(mechanisms.size(), 0);
