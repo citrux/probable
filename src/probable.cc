@@ -3,28 +3,31 @@
 #include <random>
 
 #include <probable.hh>
+#include <units.hh>
 
 namespace probable {
 
-Vec3 Material::create_particle(double temperature) const {
+Particle Material::create_particle(double temperature) const {
   double p_max = 5 * sqrt(2 * mass * consts::kB * temperature);
   while (true) {
+  for (auto &band: bands) {
     double prob = uniform();
     double p1 = p_max * cbrt(uniform());
-    if (prob < exp(-p1 * p1 / (2 * mass * consts::kB * temperature))) {
-      double cos_theta = 1 - 2 * uniform();
-      double sin_theta = sqrt(1 - cos_theta * cos_theta);
-      double phi = 2 * math::pi * uniform();
-      Vec3 p = {sin_theta * cos(phi), sin_theta * sin(phi), cos_theta};
-      p *= p1;
-      return p;
+    double cos_theta = 1 - 2 * uniform();
+    double sin_theta = sqrt(1 - cos_theta * cos_theta);
+    double phi = 2 * math::pi * uniform();
+    Vec3 p = {sin_theta * cos(phi), sin_theta * sin(phi), cos_theta};
+    p *= p1;
+    if (prob < exp(-band(p) / (consts::kB * temperature))) {
+      return {p, Vec3(), band};
+    }
     }
   }
 }
 
 Vec3 Scattering::scatter(const Vec3 &p) const {
-  double e = m.energy(p) - energy;
-  double r = sqrt(2 * m.mass * e);
+  double e = band.energy(p) - energy;
+  double r = sqrt(2 * band.mass * e);
   double cos_theta = 1 - 2 * uniform();
   double sin_theta = sqrt(1 - cos_theta * cos_theta);
   double phi = 2 * math::pi * uniform();
@@ -111,21 +114,21 @@ std::vector<Results> simulate(const Material &material,
     }
     result.average_velocity = {0, 0, 0};
     result.scattering_count.assign(mechanisms.size(), 0);
-    Vec3 p = material.create_particle(temperature);
+    Particle p = material.create_particle(temperature);
     std::vector<double> free_flight(mechanisms.size(), 0);
     for (double &l : free_flight) {
       l = -log(uniform());
     }
 
     for (size_t j = 0; j < steps; ++j) {
-      Vec3 p_ = p;
-      Vec3 v = material.velocity(p_);
-      double e = material.energy(p_);
+      Vec3 p_ = p.p;
+      Vec3 v = p.band.velocity(p_);
+      double e = p.band.energy(p_);
       size_t scattering_mechanism = 0; // means no scattering
       for (size_t k = 0; k < mechanisms.size(); ++k) {
         free_flight[k] -= mechanisms[k]->rate(p_) * time_step;
         if (free_flight[k] < 0) {
-          p = mechanisms[k]->scatter(p_);
+          p.p = mechanisms[k]->scatter(p_);
           free_flight[k] = -log(uniform());
           scattering_mechanism = k + 1; // enumerate mechanisms from 1
           break;
@@ -133,7 +136,7 @@ std::vector<Results> simulate(const Material &material,
       }
       result.append(j, j * time_step, p_, v, e, scattering_mechanism);
       if (not scattering_mechanism) {
-        p += -consts::e * (electric_field + v.cross(magnetic_field)) * time_step;
+        p.p += -consts::e * (electric_field + v.cross(magnetic_field)) * time_step;
       }
     }
   }

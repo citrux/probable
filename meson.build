@@ -29,7 +29,7 @@ probable_dep = declare_dependency(
 
 # Make this library usable from the system's
 # package manager.
-install_headers(['src/probable.hh', 'src/vec3.hh'], subdir : 'probable')
+install_headers(['src/probable.hh', 'src/vec3.hh', 'src/units.hh'], subdir : 'probable')
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(
