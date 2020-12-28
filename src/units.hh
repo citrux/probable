@@ -47,4 +47,3 @@ namespace math {
 const double e = exp(1);
 const double pi = acos(-1);
 } // namespace math
-

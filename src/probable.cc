@@ -8,21 +8,30 @@
 namespace probable {
 
 Particle Material::create_particle(double temperature) const {
-  double p_max = 5 * sqrt(2 * mass * consts::kB * temperature);
   while (true) {
-  for (auto &band: bands) {
-    double prob = uniform();
-    double p1 = p_max * cbrt(uniform());
-    double cos_theta = 1 - 2 * uniform();
-    double sin_theta = sqrt(1 - cos_theta * cos_theta);
-    double phi = 2 * math::pi * uniform();
-    Vec3 p = {sin_theta * cos(phi), sin_theta * sin(phi), cos_theta};
-    p *= p1;
-    if (prob < exp(-band(p) / (consts::kB * temperature))) {
-      return {p, Vec3(), band};
-    }
+    for (auto band : bands) {
+      Vec3 p;
+      if (band->try_boltzmann_sample_momentum(temperature, p)) {
+        return Particle{p, Vec3(), *band};
+      }
     }
   }
+}
+
+bool ParabolicBand::try_boltzmann_sample_momentum(double temperature, Vec3 &momentum) const {
+  double p_max = 5 * sqrt(2 * mass * consts::kB * temperature);
+  double prob = uniform();
+  double p1 = p_max * cbrt(uniform());
+  double cos_theta = 1 - 2 * uniform();
+  double sin_theta = sqrt(1 - cos_theta * cos_theta);
+  double phi = 2 * math::pi * uniform();
+  Vec3 p = {sin_theta * cos(phi), sin_theta * sin(phi), cos_theta};
+  p *= p1;
+  if (prob < exp(-energy(p) / (consts::kB * temperature))) {
+    momentum = p;
+    return true;
+  }
+  return false;
 }
 
 Vec3 Scattering::scatter(const Vec3 &p) const {

@@ -8,18 +8,7 @@
 
 #include <vec3.hh>
 
-
 namespace probable {
-
-struct Material {
-  std::vector<Band*> bands;
-  Particle create_particle(double temperature) const;
-  ~Material() {
-    for (auto b: bands) {
-      delete b;
-    }
-  }  
-};
 
 struct Band {
   bool occupied;
@@ -27,6 +16,9 @@ struct Band {
   virtual double energy(const Vec3 &p) const = 0;
   virtual Vec3 velocity(const Vec3 &p) const = 0;
   
+  virtual bool try_boltzmann_sample_momentum(double temperature, Vec3 &momentum) const = 0;
+
+  Band(bool occupied) : occupied(occupied) {}
   virtual ~Band() {}
 };
 
@@ -34,12 +26,25 @@ struct Particle {
   Vec3 r;
   Vec3 p;
   Band &band;
+  
+};
+
+struct Material {
+  std::vector<Band *> bands;
+  Particle create_particle(double temperature) const;
+  ~Material() {
+    for (auto b : bands) {
+      delete b;
+    }
+  }
 };
 
 struct ParabolicBand : public Band {
   double mass;
   double energy(const Vec3 &p) const { return p.dot(p) / (2 * mass); }
   Vec3 velocity(const Vec3 &p) const { return p / mass; }
+  bool try_boltzmann_sample_momentum(double temperature, Vec3 &momentum) const;
+  ParabolicBand(bool occupied, double mass) : Band(occupied), mass(mass) {}
 };
 
 struct Scattering {
@@ -48,7 +53,7 @@ struct Scattering {
   const double energy;
   Scattering(const Material &m, const Band &b, double e) : material(m), band(b), energy(e) {}
   virtual double rate(const Vec3 &p) const = 0;
-  Vec3 scatter(const Vec3 &p) const;
+  virtual Vec3 scatter(const Vec3 &p) const = 0;
   virtual ~Scattering() {}
 };
 

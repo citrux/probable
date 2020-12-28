@@ -120,7 +120,7 @@ struct PolarOpticalEmissionScattering : public Scattering {
                (1 / eps_inf - 1 / eps_static) * n;
   }
   PolarOpticalEmissionScattering(const Material &m, const Band &b, double temperature, double energy, double c)
-      : Scattering(m, energy) {
+      : Scattering(m, b, energy) {
     double n = 1 + 1 / (exp(energy / consts::kB / temperature) - 1);
     constant = pow(c, 2) / (2 * math::pi * density * energy) * n;
   }
@@ -172,59 +172,60 @@ int main(int argc, char const *argv[]) {
   Vec3 electric_field{parse<double>(argv[3]) * units::V / units::m, 0, 0};
   Vec3 magnetic_field{0, 0, 0};
 
-  Material gallium_oxide(std::vector<Band*>{new ParabolicBand{false, 0.29 * consts::me}});
+  std::vector<Band*> bands = {new ParabolicBand{false, 0.29 * consts::me}};
+  Material gallium_oxide = {bands};
   Band& conductive_band = *(gallium_oxide.bands[0]);
-  std::vector<Scattering *> scattering_mechanisms{
-      new AcousticScattering(gallium_oxide, conductive_band, temperature),
-      new ImpurityScattering(gallium_oxide, conductive_band, temperature),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 25e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 25e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 29e-3 * units::eV, 1.6e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 29e-3 * units::eV, 1.6e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 35e-3 * units::eV, 0.5e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 35e-3 * units::eV, 0.5e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 43e-3 * units::eV, 1.15e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 43e-3 * units::eV, 1.15e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 50e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 50e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 70e-3 * units::eV, 4.5e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 70e-3 * units::eV, 4.5e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 80e-3 * units::eV, 3.1e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 80e-3 * units::eV, 3.1e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 90e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 90e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 14e-3 * units::eV, 0.15e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 14e-3 * units::eV, 0.15e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 37e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 37e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 60e-3 * units::eV, 3.8e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 60e-3 * units::eV, 3.8e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalAbsorptionScattering(
-          gallium_oxide, conductive_band, temperature, 81e-3 * units::eV, 3.0e2 * units::eV / pow(units::nm, 2)),
-      new PolarOpticalEmissionScattering(
-          gallium_oxide, conductive_band, temperature, 81e-3 * units::eV, 3.0e2 * units::eV / pow(units::nm, 2))};
+  std::vector<Scattering *> scattering_mechanisms{};
+      // new AcousticScattering(gallium_oxide, conductive_band, temperature),
+      // new ImpurityScattering(gallium_oxide, conductive_band, temperature),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 25e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 25e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 29e-3 * units::eV, 1.6e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 29e-3 * units::eV, 1.6e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 35e-3 * units::eV, 0.5e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 35e-3 * units::eV, 0.5e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 43e-3 * units::eV, 1.15e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 43e-3 * units::eV, 1.15e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 50e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 50e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 70e-3 * units::eV, 4.5e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 70e-3 * units::eV, 4.5e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 80e-3 * units::eV, 3.1e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 80e-3 * units::eV, 3.1e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 90e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 90e-3 * units::eV, 3.2e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 14e-3 * units::eV, 0.15e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 14e-3 * units::eV, 0.15e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 37e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 37e-3 * units::eV, 2.0e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 60e-3 * units::eV, 3.8e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 60e-3 * units::eV, 3.8e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalAbsorptionScattering(
+      //     gallium_oxide, conductive_band, temperature, 81e-3 * units::eV, 3.0e2 * units::eV / pow(units::nm, 2)),
+      // new PolarOpticalEmissionScattering(
+      //     gallium_oxide, conductive_band, temperature, 81e-3 * units::eV, 3.0e2 * units::eV / pow(units::nm, 2))};
 
   double time_step = 1e-16 * units::s;
   double all_time = 1e-11 * units::s;
