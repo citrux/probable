@@ -6,8 +6,8 @@
 #include <typeinfo>
 #include <vector>
 
-#include <vec3.hh>
 #include <units.hh>
+#include <vec3.hh>
 
 namespace probable {
 
@@ -93,62 +93,18 @@ struct OpticalScattering : public Scattering {
   };
 };
 
-inline std::ostream &operator<<(std::ostream &s, const Scattering &sc) {
-  int status;
-  char *realname = abi::__cxa_demangle(typeid(sc).name(), 0, 0, &status);
-  s << realname << " " << sc.energy;
-  free(realname);
-  return s;
-}
-
-enum DumpFlags {
-  // contents
-  none = 0,
-  number = 1,
-  time = number << 1,
-  momentum = time << 1,
-  energy = momentum << 1,
-  velocity = energy << 1,
-  scattering = velocity << 1,
-  all = number | time | momentum | energy | velocity | scattering,
-  // frequency
-  // without this flag it will dump on every step
-  on_scatterings = scattering << 1,
+class Dumper {
+  virtual void dump(int particle, int step, const Vec3 &r, const Vec3 &p) = 0;
 };
 
-struct Results {
-  size_t size;
-  DumpFlags flags;
-  Vec3 average_velocity;
-  std::vector<uint32_t> scattering_count;
-  std::vector<uint32_t> ns;
-  std::vector<double> ts;
-  std::vector<Vec3> momentums;
-  std::vector<Vec3> velocities;
-  std::vector<double> energies;
-  std::vector<uint32_t> scatterings;
-  Results() {}
-  Results(size_t cap, DumpFlags flags = DumpFlags::none)
-      : size(0), flags(flags), ns(), ts(), momentums(), velocities(), energies(), scatterings() {
-    ns.reserve(cap);
-    ts.reserve(cap);
-    momentums.reserve(cap);
-    velocities.reserve(cap);
-    energies.reserve(cap);
-    scatterings.reserve(cap);
-  }
-  void append(uint32_t n, double t, const Vec3 &p, const Vec3 &v, double e, size_t s);
-  friend std::ostream &operator<<(std::ostream &s, const Results &r);
-};
-
-std::vector<Results> simulate(const std::vector<Scattering *> mechanisms,
-                              double temperature,
-                              const Vec3 &electric_field,
-                              const Vec3 &magnetic_field,
-                              double time_step,
-                              double all_time,
-                              size_t ensemble_size,
-                              DumpFlags flags = DumpFlags::all);
+void simulate(const std::vector<Scattering *> mechanisms,
+              double temperature,
+              const Vec3 &electric_field,
+              const Vec3 &magnetic_field,
+              double time_step,
+              double all_time,
+              size_t ensemble_size,
+              Dumper &dumper);
 
 // Thread-safe Mersenne twister-based rng
 double uniform();
