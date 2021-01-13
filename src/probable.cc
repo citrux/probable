@@ -34,15 +34,6 @@ bool ParabolicBand::try_boltzmann_sample_momentum(double temperature, Vec3 &mome
   return false;
 }
 
-Vec3 Scattering::scatter(const Vec3 &p) const {
-  double e = band.energy(p) - energy;
-  double r = sqrt(2 * band.mass * e);
-  double cos_theta = 1 - 2 * uniform();
-  double sin_theta = sqrt(1 - cos_theta * cos_theta);
-  double phi = 2 * math::pi * uniform();
-  return {r * sin_theta * cos(phi), r * sin_theta * sin(phi), r * cos_theta};
-}
-
 void Results::append(uint32_t n, double t, const Vec3 &p, const Vec3 &v, double e, size_t s) {
   average_velocity += (v - average_velocity) / (n + 1);
   if (s) {
