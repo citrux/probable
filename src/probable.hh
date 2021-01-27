@@ -11,28 +11,42 @@
 
 namespace probable {
 
+
 struct Band {
   bool occupied;
 
+  /// dispersion relation for band
   virtual double energy(const Vec3 &p) const = 0;
+  /// d/dp energy
   virtual Vec3 velocity(const Vec3 &p) const = 0;
 
+  /// try to create new particle, true if created, false if not
   virtual bool try_boltzmann_sample_momentum(double temperature, Vec3 &momentum) const = 0;
 
+  /// optimizations for acoustic scattering
+  /// scattering integral (see paper)
   virtual double acoustic_scattering_integral(double energy) const = 0;
-  virtual double optical_scattering_integral(double energy) const = 0;
+  /// new momentum after scattering
   virtual Vec3 acoustic_scatter(double energy, double random) const = 0;
+
+  /// optimizations for optical scattering
+  /// scattering integral (see paper)
+  virtual double optical_scattering_integral(double energy) const = 0;
+  /// new momentum after scattering
   virtual Vec3 optical_scatter(double energy, double random) const = 0;
 
   Band(bool occupied) : occupied(occupied) {}
   virtual ~Band() {}
 };
 
+
 struct Particle {
   Vec3 r;
   Vec3 p;
+  double charge;
   Band &band;
 };
+
 
 struct Material {
   double acoustic_deformation_potential;
@@ -49,58 +63,73 @@ struct Material {
   }
 };
 
+
 struct ParabolicBand : public Band {
   double mass;
   double energy(const Vec3 &p) const { return p.dot(p) / (2 * mass); }
   Vec3 velocity(const Vec3 &p) const { return p / mass; }
   bool try_boltzmann_sample_momentum(double temperature, Vec3 &momentum) const;
-  double acoustic_scattering_integral(double energy) const { return 0; }
+  double acoustic_scattering_integral(double energy) const { return sqrt(2 * mass * energy); }
   double optical_scattering_integral(double energy) const { return 0; }
   Vec3 acoustic_scatter(double energy, double random) const { return Vec3(); }
   Vec3 optical_scatter(double energy, double random) const { return Vec3(); }
   ParabolicBand(bool occupied, double mass) : Band(occupied), mass(mass) {}
 };
 
+
 struct Scattering {
   const Material &material;
   const Band &band;
   const double energy;
+
   Scattering(const Material &m, const Band &b, double e) : material(m), band(b), energy(e) {}
   virtual double rate(const Vec3 &p) const = 0;
   virtual Vec3 scatter(const Vec3 &p) const = 0;
   virtual ~Scattering() {}
 };
 
+
 struct AcousticScattering : public Scattering {
-  AcousticScattering(const Material &m, const Band &b) : Scattering(m, b, 0) {}
+  double constant;
+  AcousticScattering(const Material &m, const Band &b) : Scattering(m, b, 0) {
+    constant =
+        pow(material.acoustic_deformation_potential, 2) * consts::kB * temperature *
+        (math::pi * pow(consts::hbar, 4) * material.density * pow(material.sound_velocity, 2));
+  }
   virtual double rate(const Vec3 &p) const {
-    return pow(material.acoustic_deformation_potential, 2) * consts::kB * temperature *
-           (math::pi * pow(consts::hbar, 4) * material.density * pow(material.sound_velocity, 2)) *
-           band.acoustic_scattering_integral(band.energy(p));
+    return constant * band.acoustic_scattering_integral(band.energy(p));
   }
   virtual Vec3 scatter(const Vec3 &p, double random) const {
     return band.acoustic_scatter(band.energy(p), random);
   };
 };
 
+
 struct OpticalScattering : public Scattering {
-  OpticalScattering(const Material &m, const Band &b, double energy) : Scattering(m, b, energy) {}
+  double constant;
+  OpticalScattering(const Material &m, const Band &b, double energy) : Scattering(m, b, energy), constant(1) {}
   virtual double rate(const Vec3 &p) const {
-    return band.optical_scattering_integral(band.energy(p) - energy);
+    return constant * band.optical_scattering_integral(band.energy(p) - energy);
   }
   virtual Vec3 scatter(const Vec3 &p, double random) const {
     return band.optical_scatter(band.energy(p) - energy, random);
   };
 };
 
+
+/**
+  Dumper is used to collect data from simulation.
+  Method `dump` is called at the end of each step of simulation.
+*/
 class Dumper {
-  virtual void dump(int particle, int step, const Vec3 &r, const Vec3 &p) = 0;
+  public virtual void dump(int particle, int step, const Particle &p) = 0;
+  virtual ~Dumper() {};
 };
+
 
 void simulate(const std::vector<Scattering *> mechanisms,
               double temperature,
-              const Vec3 &electric_field,
-              const Vec3 &magnetic_field,
+              Vec3 (*force)(double, const Particle&), // force(t, state) for rhs
               double time_step,
               double all_time,
               size_t ensemble_size,

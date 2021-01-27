@@ -160,6 +160,42 @@ template <typename T> T sum(std::vector<T> t) {
   return s;
 }
 
+class MyDumper: public Dumper {
+  std::vector<Vec3> average_velocities;
+
+  public MyDumper(size_t n) : average_velocities(n) {}
+
+  public void dump(int i, int step, const Particle &particle) {
+    average_velocities[i] += (particle.band(particle.p) - average_velocities[i]) / (step + 1)
+  }
+
+  Vec3 mean() {
+    Vec3 result;
+    size_t n = average_velocity.size();
+    for (size_t i = 0; i < n; ++i) {
+      result += (average_velocity[i] - result) / (i + 1);
+    }
+    return result;
+  }
+
+  Vec3 std() {
+    Vec3 result;
+    size_t n = average_velocity.size();
+    for (size_t i = 0; i < n; ++i) {
+      result += (pow(average_velocity[i], 2) - result) / (i + 1);
+    }
+    return (result - pow(mean(), 2)).sqrt();
+  }
+};
+
+// FIXME: global variables
+// maybe make Simulation class with pure virtual Vec3 force() method
+Vec3 electric_field;
+Vec3 magnetic_field;
+Vec3 force(double t, const Particle& p) {
+  return p.charge * (electric_field + p.band.velocity(p.p).cross(magnetic_field));
+}
+
 int main(int argc, char const *argv[]) {
   if (argc != 4) {
     std::cout << "Invalid number of arguments\n";
@@ -169,8 +205,8 @@ int main(int argc, char const *argv[]) {
 
   size_t ensemble_size = parse<int>(argv[1]);
   double temperature = parse<double>(argv[2]) * units::K;
-  Vec3 electric_field{parse<double>(argv[3]) * units::V / units::m, 0, 0};
-  Vec3 magnetic_field{0, 0, 0};
+  electric_field = {parse<double>(argv[3]) * units::V / units::m, 0, 0};
+  magnetic_field = {0, 0, 0};
 
   std::vector<Band*> bands = {new ParabolicBand{false, 0.29 * consts::me}};
   Material gallium_oxide = {bands};
@@ -241,15 +277,15 @@ int main(int argc, char const *argv[]) {
   for (size_t i = 0; i < scattering_mechanisms.size(); ++i) {
     std::cout << i + 1 << ": " << *scattering_mechanisms[i] << '\n';
   }
-  auto results = simulate(
-                          scattering_mechanisms,
+
+  MyDumper dumper(ensemble_size);
+  auto results = simulate(scattering_mechanisms,
                           temperature,
-                          electric_field,
-                          magnetic_field,
+                          force,
                           time_step,
                           all_time,
                           ensemble_size,
-                          DumpFlags(DumpFlags::none));
+                          dumper);
   Vec3 average_velocity;
   Vec3 average_velocity2;
   std::vector<double> scattering_rates(scattering_mechanisms.size(), 0);
