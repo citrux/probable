@@ -92,6 +92,7 @@ struct Scattering {
 struct AcousticScattering : public Scattering {
   double constant;
   AcousticScattering(const Material &m, const Band &b) : Scattering(m, b, 0) {
+    double temperature = 1;
     constant =
         pow(material.acoustic_deformation_potential, 2) * consts::kB * temperature *
         (math::pi * pow(consts::hbar, 4) * material.density * pow(material.sound_velocity, 2));
@@ -122,12 +123,14 @@ struct OpticalScattering : public Scattering {
   Method `dump` is called at the end of each step of simulation.
 */
 class Dumper {
-  public virtual void dump(int particle, int step, const Particle &p) = 0;
+public:
+  virtual void dump(int particle, int step, const Particle &p) = 0;
   virtual ~Dumper() {};
 };
 
 
 void simulate(const std::vector<Scattering *> mechanisms,
+              const Material& material,
               double temperature,
               Vec3 (*force)(double, const Particle&), // force(t, state) for rhs
               double time_step,

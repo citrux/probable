@@ -15,128 +15,6 @@ const double nonpolar_optical_deformation_potential =
 const double eps_inf = 4.21;       // high-frequency dielectric constant
 const double eps_static = 11.4;    // static dielectric constant;
 
-struct AcousticScattering : public Scattering {
-  AcousticScattering(const Material &m, const Band &b, double temperature) : Scattering(m, b, 0) {
-    constant = pow(acoustic_deformation_potential, 2) * consts::kB * temperature * band.mass /
-               (math::pi * pow(consts::hbar, 4) * density * pow(sound_velocity, 2));
-  }
-  double rate(const Vec3 &p) const { return constant * p.length(); }
-
-private:
-  double constant;
-};
-
-struct ImpurityScattering : public Scattering {
-  ImpurityScattering(const Material &m, const Band &b, double temperature) : Scattering(m, b, 0) {
-    const double z = 1;
-    const double t = temperature / units::K;
-
-    // аппроксимация радиуса экранирования
-    const double a = 2.73e-11;
-    const double b = 24.11;
-    const double c = 5.69e-15;
-    const double d = -1.99e-13;
-    const double r02 = (a / (t - b) + c * t + d) * pow(units::cm, 2);
-
-    // концентрация электронов
-    const double n = 1e17 * (0.44 * atan(0.021 * t - 2.05) + 0.35) * pow(units::cm, -3);
-    // концентрация акцепторов
-    const double n_a = 4.2e16 * pow(units::cm, -3);
-    // концентрация ионизированных примесей
-    const double nci = n + 2 * n_a;
-
-    constant = nci / math::pi * pow(z * r02 / consts::eps0 / eps_static, 2) *
-               pow(consts::e / consts::hbar, 4) * band.mass;
-    p02inv = r02 * pow(2 / consts::hbar, 2);
-  }
-  double rate(const Vec3 &p) const { return constant * p.length() / (1 + p.dot(p) * p02inv); }
-
-private:
-  double constant;
-  double p02inv;
-};
-
-struct NonpolarOpticalAbsorptionScattering : public Scattering {
-  NonpolarOpticalAbsorptionScattering(const Material &m, const Band &b, double temperature, double energy)
-      : Scattering(m, b, -energy) {
-    constant = pow(nonpolar_optical_deformation_potential, 2) * pow(band.mass, 1.5) /
-               (sqrt(2) * math::pi * pow(consts::hbar, 2) * density * energy) /
-               (exp(energy / consts::kB / temperature) - 1);
-  }
-  double rate(const Vec3 &p) const { return constant * sqrt(band.energy(p) - energy); }
-
-private:
-  double constant;
-};
-
-struct NonpolarOpticalEmissionScattering : public Scattering {
-  NonpolarOpticalEmissionScattering(const Material &m, const Band &b, double temperature, double energy)
-      : Scattering(m, b, energy) {
-    constant = pow(nonpolar_optical_deformation_potential, 2) * pow(band.mass, 1.5) /
-               (sqrt(2) * math::pi * pow(consts::hbar, 2) * density * energy) *
-               (1 + 1 / (exp(energy / consts::kB / temperature) - 1));
-  }
-  double rate(const Vec3 &p) const {
-    double e = band.energy(p);
-    if (e < energy) {
-      return 0;
-    }
-    return constant * sqrt(e - energy);
-  }
-
-private:
-  double constant;
-};
-
-struct PolarOpticalAbsorptionScattering : public Scattering {
-  PolarOpticalAbsorptionScattering(const Material &m, const Band &b, double temperature, double energy)
-      : Scattering(m, b, -energy) {
-    double n = 1 / (exp(energy / consts::kB / temperature) - 1);
-    constant = pow(consts::e, 2) * energy / (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
-               (1 / eps_inf - 1 / eps_static) * n;
-  }
-  PolarOpticalAbsorptionScattering(const Material &m, const Band &b, double temperature, double energy, double c)
-      : Scattering(m, b, -energy) {
-    double n = 1 / (exp(energy / consts::kB / temperature) - 1);
-    constant = pow(c, 2) / (2 * math::pi * density * energy) * n;
-  }
-  double rate(const Vec3 &p) const {
-    double v = band.velocity(p).length();
-    if (v < 1e-20) {
-      return constant * sqrt(band.mass / std::abs(2 * energy));
-    }
-    return constant / v * asinh(sqrt(band.energy(p) / std::abs(energy)));
-  }
-
-private:
-  double constant;
-};
-
-struct PolarOpticalEmissionScattering : public Scattering {
-  PolarOpticalEmissionScattering(const Material &m, const Band &b, double temperature, double energy)
-      : Scattering(m, b, energy) {
-    double n = 1 + 1 / (exp(energy / consts::kB / temperature) - 1);
-    constant = pow(consts::e, 2) * energy / (2 * math::pi * consts::eps0 * pow(consts::hbar, 2)) *
-               (1 / eps_inf - 1 / eps_static) * n;
-  }
-  PolarOpticalEmissionScattering(const Material &m, const Band &b, double temperature, double energy, double c)
-      : Scattering(m, b, energy) {
-    double n = 1 + 1 / (exp(energy / consts::kB / temperature) - 1);
-    constant = pow(c, 2) / (2 * math::pi * density * energy) * n;
-  }
-  double rate(const Vec3 &p) const {
-    double e = band.energy(p);
-    if (e < energy) {
-      return 0;
-    }
-    double v = band.velocity(p).length();
-    return constant / v * acosh(sqrt(e / std::abs(energy)));
-  }
-
-private:
-  double constant;
-};
-
 template <typename T> T parse(const std::string &s) {
   std::stringstream ss(s);
   T result;
@@ -163,28 +41,30 @@ template <typename T> T sum(std::vector<T> t) {
 class MyDumper: public Dumper {
   std::vector<Vec3> average_velocities;
 
-  public MyDumper(size_t n) : average_velocities(n) {}
+public:
+  MyDumper(size_t n) : average_velocities(n) {}
 
-  public void dump(int i, int step, const Particle &particle) {
-    average_velocities[i] += (particle.band(particle.p) - average_velocities[i]) / (step + 1)
+  void dump(int i, int step, const Particle &particle) {
+    average_velocities[i] += (particle.band.velocity(particle.p) - average_velocities[i]) / (step + 1);
   }
 
   Vec3 mean() {
     Vec3 result;
-    size_t n = average_velocity.size();
+    size_t n = average_velocities.size();
     for (size_t i = 0; i < n; ++i) {
-      result += (average_velocity[i] - result) / (i + 1);
+      result += (average_velocities[i] - result) / (i + 1);
     }
     return result;
   }
 
   Vec3 std() {
     Vec3 result;
-    size_t n = average_velocity.size();
+    size_t n = average_velocities.size();
     for (size_t i = 0; i < n; ++i) {
-      result += (pow(average_velocity[i], 2) - result) / (i + 1);
+      result += (average_velocities[i] * average_velocities[i] - result) / (i + 1);
     }
-    return (result - pow(mean(), 2)).sqrt();
+    Vec3 m = mean();
+    return (result - m * m).sqrt();
   }
 };
 
@@ -208,8 +88,8 @@ int main(int argc, char const *argv[]) {
   electric_field = {parse<double>(argv[3]) * units::V / units::m, 0, 0};
   magnetic_field = {0, 0, 0};
 
-  std::vector<Band*> bands = {new ParabolicBand{false, 0.29 * consts::me}};
-  Material gallium_oxide = {bands};
+  Material gallium_oxide;
+  gallium_oxide.bands = {new ParabolicBand{false, 0.29 * consts::me}};
   Band& conductive_band = *(gallium_oxide.bands[0]);
   std::vector<Scattering *> scattering_mechanisms{};
       // new AcousticScattering(gallium_oxide, conductive_band, temperature),
@@ -274,12 +154,13 @@ int main(int argc, char const *argv[]) {
   std::cout << "Electric field:   " << electric_field / units::V * units::m << " V/m\n";
   std::cout << "Magnetic field:   " << magnetic_field / units::T << " T\n";
   std::cout << "Scattering mechanisms:\n";
-  for (size_t i = 0; i < scattering_mechanisms.size(); ++i) {
-    std::cout << i + 1 << ": " << *scattering_mechanisms[i] << '\n';
-  }
+  // for (size_t i = 0; i < scattering_mechanisms.size(); ++i) {
+  //   std::cout << i + 1 << ": " << *scattering_mechanisms[i] << '\n';
+  // }
 
   MyDumper dumper(ensemble_size);
-  auto results = simulate(scattering_mechanisms,
+  simulate(scattering_mechanisms,
+           gallium_oxide,
                           temperature,
                           force,
                           time_step,
@@ -288,20 +169,10 @@ int main(int argc, char const *argv[]) {
                           dumper);
   Vec3 average_velocity;
   Vec3 average_velocity2;
-  std::vector<double> scattering_rates(scattering_mechanisms.size(), 0);
-  for (std::size_t i = 0; i < results.size(); ++i) {
-    average_velocity += (results[i].average_velocity - average_velocity) / (i + 1);
-    average_velocity2 +=
-        (results[i].average_velocity * results[i].average_velocity - average_velocity2) / (i + 1);
-    for (std::size_t j = 0; j < scattering_mechanisms.size(); ++j) {
-      scattering_rates[j] +=
-          (results[i].scattering_count[j] / all_time * units::s - scattering_rates[j]) / (i + 1);
-    }
-  }
-  Vec3 std_velocity = (average_velocity2 - average_velocity * average_velocity).sqrt();
-  std::cout << "Average velocity: " << average_velocity << '\n';
-  std::cout << "             std: " << std_velocity << '\n';
-  std::cout << "Scattering rates: " << scattering_rates << '\n';
-  std::cout << "           Total: " << sum(scattering_rates) << '\n';
+  //  std::vector<double> scattering_rates(scattering_mechanisms.size(), 0);
+  std::cout << "Average velocity: " << dumper.mean() << '\n';
+  std::cout << "             std: " << dumper.std() << '\n';
+  // std::cout << "Scattering rates: " << scattering_rates << '\n';
+  // std::cout << "           Total: " << sum(scattering_rates) << '\n';
   return 0;
 }

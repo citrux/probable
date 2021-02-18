@@ -12,7 +12,7 @@ Particle Material::create_particle(double temperature) const {
     for (auto band : bands) {
       Vec3 p;
       if (band->try_boltzmann_sample_momentum(temperature, p)) {
-        return Particle{p, Vec3(), *band};
+        return Particle{p, Vec3(), consts::e, *band};
       }
     }
   }
@@ -33,87 +33,17 @@ bool ParabolicBand::try_boltzmann_sample_momentum(double temperature, Vec3 &mome
   }
   return false;
 }
-
-void Results::append(uint32_t n, double t, const Vec3 &p, const Vec3 &v, double e, size_t s) {
-  average_velocity += (v - average_velocity) / (n + 1);
-  if (s) {
-    scattering_count[s - 1] += 1;
-  }
-  if (not(flags & DumpFlags::on_scatterings) or s) {
-    if (flags & DumpFlags::scattering) {
-      scatterings.push_back(s);
-    }
-    if (flags & DumpFlags::number) {
-      ns.push_back(n);
-    }
-    if (flags & DumpFlags::time) {
-      ts.push_back(t);
-    }
-    if (flags & DumpFlags::momentum) {
-      momentums.push_back(p);
-    }
-    if (flags & DumpFlags::velocity) {
-      velocities.push_back(v);
-    }
-    if (flags & DumpFlags::energy) {
-      energies.push_back(e);
-    }
-    size += 1;
-  }
-}
-
-std::ostream &operator<<(std::ostream &s, const Results &r) {
-  if (r.flags == DumpFlags::none) {
-    return s;
-  }
-  for (size_t i = 0; i < r.size; ++i) {
-    if (r.flags & DumpFlags::number) {
-      s << r.ns[i] << " ";
-    }
-    if (r.flags & DumpFlags::time) {
-      s << r.ts[i] / units::s << " ";
-    }
-    if (r.flags & DumpFlags::momentum) {
-      s << r.momentums[i].x << " ";
-      s << r.momentums[i].y << " ";
-      s << r.momentums[i].z << " ";
-    }
-    if (r.flags & DumpFlags::velocity) {
-      s << r.velocities[i].x / units::m * units::s << " ";
-      s << r.velocities[i].y / units::m * units::s << " ";
-      s << r.velocities[i].z / units::m * units::s << " ";
-    }
-    if (r.flags & DumpFlags::energy) {
-      s << r.energies[i] / units::eV << " ";
-    }
-    if (r.flags & DumpFlags::scattering) {
-      s << r.scatterings[i];
-    }
-    s << "\n";
-  }
-  return s;
-}
-
-std::vector<Results> simulate(const Material &material,
-                              const std::vector<Scattering *> mechanisms,
-                              double temperature,
-                              const Vec3 &electric_field,
-                              const Vec3 &magnetic_field,
-                              double time_step,
-                              double all_time,
-                              size_t ensemble_size,
-                              DumpFlags flags) {
-  std::vector<Results> results(ensemble_size);
+void simulate(const std::vector<Scattering *> mechanisms,
+              const Material& material,
+              double temperature,
+              Vec3 (*force)(double, const Particle&), // force(t, state) for rhs
+              double time_step,
+              double all_time,
+              size_t ensemble_size,
+              Dumper &dumper) {
   size_t steps = all_time / time_step + 1;
-  size_t alloc = (flags & DumpFlags::on_scatterings) ? steps / 10 : steps;
 #pragma omp parallel for
   for (size_t i = 0; i < ensemble_size; ++i) {
-    Results &result = results[i];
-    if (flags != DumpFlags::none) {
-      result = Results(alloc, flags);
-    }
-    result.average_velocity = {0, 0, 0};
-    result.scattering_count.assign(mechanisms.size(), 0);
     Particle p = material.create_particle(temperature);
     std::vector<double> free_flight(mechanisms.size(), 0);
     for (double &l : free_flight) {
@@ -134,13 +64,12 @@ std::vector<Results> simulate(const Material &material,
           break;
         }
       }
-      result.append(j, j * time_step, p_, v, e, scattering_mechanism);
+      dumper.dump(i, j, p);
       if (not scattering_mechanism) {
-        p.p += -consts::e * (electric_field + v.cross(magnetic_field)) * time_step;
+        p.p += force(j*time_step, p) * time_step;
       }
     }
   }
-  return results;
 }
 
 double uniform() {
