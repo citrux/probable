@@ -33,10 +33,11 @@ bool ParabolicBand::try_boltzmann_sample_momentum(double temperature, Vec3 &mome
   }
   return false;
 }
+
 void simulate(const std::vector<Scattering *> mechanisms,
-              const Material& material,
+              const Material &material,
               double temperature,
-              Vec3 (*force)(double, const Particle&), // force(t, state) for rhs
+              std::function<Vec3(double, const Particle &)> force, // force(t, state) for rhs
               double time_step,
               double all_time,
               size_t ensemble_size,
@@ -58,7 +59,7 @@ void simulate(const std::vector<Scattering *> mechanisms,
       for (size_t k = 0; k < mechanisms.size(); ++k) {
         free_flight[k] -= mechanisms[k]->rate(p_) * time_step;
         if (free_flight[k] < 0) {
-          p.p = mechanisms[k]->scatter(p_);
+          p.p = mechanisms[k]->scatter(p_, uniform());
           free_flight[k] = -log(uniform());
           scattering_mechanism = k + 1; // enumerate mechanisms from 1
           break;
@@ -66,7 +67,7 @@ void simulate(const std::vector<Scattering *> mechanisms,
       }
       dumper.dump(i, j, p);
       if (not scattering_mechanism) {
-        p.p += force(j*time_step, p) * time_step;
+        p.p += force(j * time_step, p) * time_step;
       }
     }
   }

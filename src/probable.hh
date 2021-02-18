@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cxxabi.h>
+#include <functional>
 #include <ostream>
 #include <typeinfo>
 #include <vector>
@@ -10,7 +11,6 @@
 #include <vec3.hh>
 
 namespace probable {
-
 
 struct Band {
   bool occupied;
@@ -39,14 +39,12 @@ struct Band {
   virtual ~Band() {}
 };
 
-
 struct Particle {
   Vec3 r;
   Vec3 p;
   double charge;
   Band &band;
 };
-
 
 struct Material {
   double acoustic_deformation_potential;
@@ -63,7 +61,6 @@ struct Material {
   }
 };
 
-
 struct ParabolicBand : public Band {
   double mass;
   double energy(const Vec3 &p) const { return p.dot(p) / (2 * mass); }
@@ -76,7 +73,6 @@ struct ParabolicBand : public Band {
   ParabolicBand(bool occupied, double mass) : Band(occupied), mass(mass) {}
 };
 
-
 struct Scattering {
   const Material &material;
   const Band &band;
@@ -84,10 +80,9 @@ struct Scattering {
 
   Scattering(const Material &m, const Band &b, double e) : material(m), band(b), energy(e) {}
   virtual double rate(const Vec3 &p) const = 0;
-  virtual Vec3 scatter(const Vec3 &p) const = 0;
+  virtual Vec3 scatter(const Vec3 &p, double random) const = 0;
   virtual ~Scattering() {}
 };
-
 
 struct AcousticScattering : public Scattering {
   double constant;
@@ -105,10 +100,10 @@ struct AcousticScattering : public Scattering {
   };
 };
 
-
 struct OpticalScattering : public Scattering {
   double constant;
-  OpticalScattering(const Material &m, const Band &b, double energy) : Scattering(m, b, energy), constant(1) {}
+  OpticalScattering(const Material &m, const Band &b, double energy)
+      : Scattering(m, b, energy), constant(1) {}
   virtual double rate(const Vec3 &p) const {
     return constant * band.optical_scattering_integral(band.energy(p) - energy);
   }
@@ -117,7 +112,6 @@ struct OpticalScattering : public Scattering {
   };
 };
 
-
 /**
   Dumper is used to collect data from simulation.
   Method `dump` is called at the end of each step of simulation.
@@ -125,14 +119,13 @@ struct OpticalScattering : public Scattering {
 class Dumper {
 public:
   virtual void dump(int particle, int step, const Particle &p) = 0;
-  virtual ~Dumper() {};
+  virtual ~Dumper(){};
 };
 
-
 void simulate(const std::vector<Scattering *> mechanisms,
-              const Material& material,
+              const Material &material,
               double temperature,
-              Vec3 (*force)(double, const Particle&), // force(t, state) for rhs
+              std::function<Vec3(double, const Particle &)> force, // force(t, state) for rhs
               double time_step,
               double all_time,
               size_t ensemble_size,

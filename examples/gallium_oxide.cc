@@ -70,11 +70,14 @@ public:
 
 // FIXME: global variables
 // maybe make Simulation class with pure virtual Vec3 force() method
-Vec3 electric_field;
-Vec3 magnetic_field;
-Vec3 force(double t, const Particle& p) {
-  return p.charge * (electric_field + p.band.velocity(p.p).cross(magnetic_field));
-}
+
+struct Force {
+  Vec3 electric_field;
+  Vec3 magnetic_field;
+  Vec3 operator()(double t, const Particle& p) const {
+    return p.charge * (electric_field + p.band.velocity(p.p).cross(magnetic_field));
+  }
+};
 
 int main(int argc, char const *argv[]) {
   if (argc != 4) {
@@ -85,8 +88,8 @@ int main(int argc, char const *argv[]) {
 
   size_t ensemble_size = parse<int>(argv[1]);
   double temperature = parse<double>(argv[2]) * units::K;
-  electric_field = {parse<double>(argv[3]) * units::V / units::m, 0, 0};
-  magnetic_field = {0, 0, 0};
+  Vec3 electric_field = {parse<double>(argv[3]) * units::V / units::m, 0, 0};
+  Vec3 magnetic_field = {0, 0, 0};
 
   Material gallium_oxide;
   gallium_oxide.bands = {new ParabolicBand{false, 0.29 * consts::me}};
@@ -159,6 +162,7 @@ int main(int argc, char const *argv[]) {
   // }
 
   MyDumper dumper(ensemble_size);
+  Force force{electric_field, magnetic_field};
   simulate(scattering_mechanisms,
            gallium_oxide,
                           temperature,
