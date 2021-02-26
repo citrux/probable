@@ -35,8 +35,10 @@ struct Band {
 
   /// optimizations for optical scattering
   /// scattering integral (see paper)
-  /// \int_{\epsilon(p)=energy} \frac{(\vec{p} - \vec{p}_0)^2}{((\vec{p} - \vec{p}_0)^2 + \hbar^2 q_0^2)^2}\frac{d\sigma}{|\nabla\varepsilon(\vec{p})|}
-  virtual double optical_scattering_integral(double energy, const Vec3 &momentum, double phonon_energy) const = 0;
+  /// \int_{\epsilon(p)=energy} \frac{(\vec{p} - \vec{p}_0)^2}{((\vec{p} - \vec{p}_0)^2 + \hbar^2
+  /// q_0^2)^2}\frac{d\sigma}{|\nabla\varepsilon(\vec{p})|}
+  virtual double
+  optical_scattering_integral(double energy, const Vec3 &momentum, double phonon_energy) const = 0;
   /// new momentum after scattering
   virtual Vec3 optical_scatter(double energy, std::function<double()> random) const = 0;
 
@@ -73,7 +75,8 @@ struct ParabolicBand : public Band {
   bool try_boltzmann_sample_momentum(double temperature, Vec3 &momentum) const;
   double delta_integral(double energy) const { return sqrt(2 * mass * energy); }
   double acoustic_scattering_integral(double energy) const { return delta_integral(energy); }
-  double optical_scattering_integral(double energy, const Vec3 &momentum, double phonon_energy) const {
+  double
+  optical_scattering_integral(double energy, const Vec3 &momentum, double phonon_energy) const {
     return mass / momentum.length() * asinh(energy / phonon_energy);
   }
   Vec3 acoustic_scatter(double energy, std::function<double()> random) const {
@@ -84,7 +87,9 @@ struct ParabolicBand : public Band {
     double phi = 2 * math::pi * random();
     return p * Vec3{sin_theta * cos(phi), sin_theta * sin(phi), cos_theta};
   }
-  Vec3 optical_scatter(double energy, std::function<double()> random) const { return acoustic_scatter(energy, random); }
+  Vec3 optical_scatter(double energy, std::function<double()> random) const {
+    return acoustic_scatter(energy, random);
+  }
   ParabolicBand(bool occupied, double mass) : Band(occupied), mass(mass) {}
 };
 
