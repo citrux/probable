@@ -7,13 +7,8 @@
 #include <units.hh>
 
 using namespace probable;
-const double density = 5.88 * units::g / pow(units::cm, 3);     // density
-const double sound_velocity = 6.8e3 * units::m / units::s;      // sound velocity
-const double acoustic_deformation_potential = 16.6 * units::eV; // acoustic deformation potential
-const double nonpolar_optical_deformation_potential =
-    8.5e8 * units::eV / units::cm; // acoustic deformation potential
-const double eps_inf = 4.21;       // high-frequency dielectric constant
-const double eps_static = 11.4;    // static dielectric constant;
+const double eps_inf = 4.21;    // high-frequency dielectric constant
+const double eps_static = 11.4; // static dielectric constant;
 
 template <typename T> T parse(const std::string &s) {
   std::stringstream ss(s);
@@ -90,6 +85,12 @@ int main(int argc, char const *argv[]) {
   Vec3 magnetic_field = {0, 0, 0};
 
   Material gallium_oxide;
+  gallium_oxide.density = 5.88 * units::g / pow(units::cm, 3);     // density
+  gallium_oxide.sound_velocity = 6.8e3 * units::m / units::s;      // sound velocity
+  gallium_oxide.acoustic_deformation_potential = 16.6 * units::eV; // acoustic deformation potential
+  gallium_oxide.nonpolar_optical_deformation_potential =
+      8.5e8 * units::eV / units::cm; // acoustic deformation potential
+
   gallium_oxide.bands = {new ParabolicBand{false, 0.29 * consts::me}};
   Band &conductive_band = *(gallium_oxide.bands[0]);
   std::vector<Scattering *> scattering_mechanisms = {
@@ -194,8 +195,7 @@ int main(int argc, char const *argv[]) {
            all_time,
            ensemble_size,
            dumper);
-  Vec3 average_velocity;
-  Vec3 average_velocity2;
+
   //  std::vector<double> scattering_rates(scattering_mechanisms.size(), 0);
   std::cout << "Average velocity: " << dumper.mean() << '\n';
   std::cout << "             std: " << dumper.std() << '\n';
