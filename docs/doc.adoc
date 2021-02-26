@@ -1,0 +1,103 @@
+= Электрон-фононное рассеяние
+citrux <369565@gmail.com>
+
+== Вероятность рассеяния на акустических фононах
+
+[env.equation]
+--
+W(\vec{p},\vec{p}^\prime) = \frac{\pi D_a^2}{\rho v_s^2} \frac{kT}{\hbar}
+\delta(\epsilon(\vec{p}^\prime) - \epsilon(\vec{p}))
+\left[
+    \delta_{\vec{q}, \frac{\vec{p}-\vec{p}^\prime}{\hbar}} +
+    \delta_{\vec{q}, -\frac{\vec{p}-\vec{p}^\prime}{\hbar}}
+\right]
+--
+
+Полная вероятность рассеяния электрона из состояния $ \vec{p} $:
+
+[env.equation]
+--
+W(\vec{p}) = \int \frac{ d^3 \vec{p}^\prime }{ (2\pi\hbar)^3 } \frac{\pi D_a^2}{\rho v_s^2}\frac{kT}{\hbar}
+\delta(\epsilon(\vec{p}^\prime) - \epsilon(\vec{p}))
+\left[
+    \delta_{\vec{q}, \frac{\vec{p}-\vec{p}^\prime}{\hbar}} +
+    \delta_{\vec{q}, -\frac{\vec{p}-\vec{p}^\prime}{\hbar}}
+\right] =
+2 \frac{1}{(2\pi\hbar)^3} \frac{\pi D_a^2}{\rho v_s^2} \frac{kT}{\hbar}
+\int\limits_{\epsilon(\vec{p}^\prime) =
+\epsilon(\vec{p})} \frac{d\sigma}{|\nabla\epsilon(\vec{p}^\prime)|}
+--
+
+[env.equation]
+--
+W(\vec{p}) =
+\frac{1}{4\pi^2} \frac{D_a^2}{\rho v_s^2} \frac{kT}{\hbar^4}
+\int\limits_{\epsilon(\vec{p}^\prime) =
+\epsilon(\vec{p})} \frac{d\sigma}{|\nabla\epsilon(\vec{p}^\prime)|}
+--
+
+В случае спектра $\epsilon(\vec{p}) = p^2/2m$ получаем
+
+[env.equation]
+--
+W(\vec{p}) =
+\frac{1}{\pi} \frac{D_a^2}{\rho v_s^2} \frac{kT}{\hbar^4} m p
+--
+
+== Вероятность рассеяния на оптических фононах
+
+[env.equation]
+--
+W(\vec{p},\vec{p}^\prime) =
+\frac{V}{G} \frac{\pi}{M \omega_{\vec{q}}} \left(\frac{e^* e^-}{\varepsilon_0 V_0}\right)^2 \frac{q^2}{ ( q_0^2 + q^2 )^2 }
+\left[
+    n(q)\delta(\epsilon(\vec{p}^\prime) - \epsilon(\vec{p})-\hbar\omega_{\vec{q}})
+        \delta_{\vec{q}, -\frac{\vec{p}-\vec{p}^\prime}{\hbar}} + \\
+    + (n(q)+1)\delta(\epsilon(\vec{p}^\prime) - \epsilon(\vec{p})+\hbar\omega_{\vec{q}})
+        \delta_{\vec{q}, \frac{\vec{p}-\vec{p}^\prime}{\hbar}}
+\right]
+--
+
+[env.equation]
+--
+W(\vec{p},\vec{q}) =
+\frac{V}{G} \frac{\pi}{M \omega_{\vec{q}}} \left(\frac{e^* e^-}{\varepsilon_0 V_0}\right)^2 \frac{q^2}{ ( q_0^2 + q^2 )^2 }
+\left[
+    n(q)\delta(\epsilon(\vec{p} + \hbar\vec{q}) - \epsilon(\vec{p}) - \hbar\omega_{\vec{q}}) + \\
+    + (n(q) + 1)\delta(\epsilon(\vec{p} - \hbar\vec{q}) - \epsilon(\vec{p}) + \hbar\omega_{\vec{q}})
+\right]
+--
+
+Считая оптические фононы бездисперсионными $ \omega_{\vec{q}} = \omega_0 $ получаем
+
+[env.equation]
+--
+W(\vec{p},\vec{q}) =
+\frac{V}{G} \frac{\pi}{M \omega_0} \left(\frac{e^* e^-}{\varepsilon_0 V_0}\right)^2 \frac{q^2}{ ( q_0^2 + q^2 )^2 }
+\left[
+    n(q)\delta(\epsilon(\vec{p} + \hbar\vec{q}) - \epsilon(\vec{p}) - \hbar\omega_0) + \\
+    + (n(q) + 1)\delta(\epsilon(\vec{p} - \hbar\vec{q}) - \epsilon(\vec{p}) + \hbar\omega_0)
+\right]
+--
+
+Проинтегрируем
+
+[env.equation]
+--
+W(\vec{p}) =
+\frac{V}{G} \frac{\pi}{M \omega_0} \left(\frac{e^* e^-}{\varepsilon_0 V_0}\right)^2 \int\frac{d^3\vec{q}}{ (2\pi)^3 } \frac{q^2}{ ( q_0^2 + q^2 )^2 }
+\left[
+    n(q)\delta(\epsilon(\vec{p} + \hbar\vec{q}) - \epsilon(\vec{p}) - \hbar\omega_0) + \\
+    + (n(q) + 1)\delta(\epsilon(\vec{p} - \hbar\vec{q}) - \epsilon(\vec{p}) + \hbar\omega_0)
+\right]
+--
+
+[env.equation]
+--
+W(\vec{p}) =
+\frac{V}{G} \frac{1}{8 \pi^2 M \omega_0} \left(\frac{e^* e^-}{\varepsilon_0 V_0}\right)^2 \left[\int\limits_{\epsilon(\vec{p} + \hbar\vec{q}) = \epsilon(\vec{p}) + \hbar\omega_0} d\sigma \frac{q^2}{ ( q_0^2 + q^2 )^2 }
+    \frac{n(q)}{\hbar|\nabla\epsilon(\vec{p} + \hbar\vec{q})|} + \\
+    + \int\limits_{\epsilon(\vec{p} - \hbar\vec{q}) = \epsilon(\vec{p}) - \hbar\omega_0} d\sigma \frac{q^2}{ ( q_0^2 + q^2 )^2 }
+    \frac{n(q) + 1}{\hbar|\nabla\epsilon(\vec{p} - \hbar\vec{q})|}
+\right]
+--
