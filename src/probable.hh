@@ -97,8 +97,10 @@ struct Scattering {
   const Material &material;
   const Band &band;
   const double energy;
+  const double temperature;
 
-  Scattering(const Material &m, const Band &b, double e) : material(m), band(b), energy(e) {}
+  Scattering(const Material &m, const Band &b, double e, double t)
+      : material(m), band(b), energy(e), temperature(t) {}
   virtual double rate(const Vec3 &p) const = 0;
   virtual Vec3 scatter(const Vec3 &p, std::function<double()> random) const = 0;
   virtual ~Scattering() {}
@@ -106,8 +108,7 @@ struct Scattering {
 
 struct AcousticScattering : public Scattering {
   double constant;
-  AcousticScattering(const Material &m, const Band &b) : Scattering(m, b, 0) {
-    double temperature = 1;
+  AcousticScattering(const Material &m, const Band &b, double t) : Scattering(m, b, 0, t) {
     constant =
         pow(material.acoustic_deformation_potential, 2) * consts::kB * temperature *
         (math::pi * pow(consts::hbar, 4) * material.density * pow(material.sound_velocity, 2));
@@ -122,8 +123,8 @@ struct AcousticScattering : public Scattering {
 
 struct OpticalScattering : public Scattering {
   double constant;
-  OpticalScattering(const Material &m, const Band &b, double energy)
-      : Scattering(m, b, energy), constant(1) {}
+  OpticalScattering(const Material &m, const Band &b, double energy, double t)
+      : Scattering(m, b, energy, t), constant(1) {}
   virtual double rate(const Vec3 &p) const {
     return constant * band.optical_scattering_integral(band.energy(p) - energy, p, energy);
   }

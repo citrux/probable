@@ -92,8 +92,8 @@ int main(int argc, char const *argv[]) {
   Material gallium_oxide;
   gallium_oxide.bands = {new ParabolicBand{false, 0.29 * consts::me}};
   Band &conductive_band = *(gallium_oxide.bands[0]);
-  std::vector<Scattering *> scattering_mechanisms{};
-  // new AcousticScattering(gallium_oxide, conductive_band, temperature),
+  std::vector<Scattering *> scattering_mechanisms = {
+      new AcousticScattering(gallium_oxide, conductive_band, temperature)};
   // new ImpurityScattering(gallium_oxide, conductive_band, temperature),
   // new PolarOpticalAbsorptionScattering(
   //     gallium_oxide, conductive_band, temperature, 25e-3 * units::eV, 2.0e2 * units::eV /
@@ -166,7 +166,8 @@ int main(int argc, char const *argv[]) {
   //     pow(units::nm, 2)),
   // new PolarOpticalEmissionScattering(
   //     gallium_oxide, conductive_band, temperature, 81e-3 * units::eV, 3.0e2 * units::eV /
-  //     pow(units::nm, 2))};
+  //     pow(units::nm, 2))
+  // };
 
   double time_step = 1e-16 * units::s;
   double all_time = 1e-11 * units::s;
