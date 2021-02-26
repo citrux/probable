@@ -35,6 +35,7 @@ struct Band {
 
   /// optimizations for optical scattering
   /// scattering integral (see paper)
+  /// \int_{\epsilon(p)=energy} \frac{(\vec{p} - \vec{p}_0)^2}{((\vec{p} - \vec{p}_0)^2 + \hbar^2 q_0^2)^2}\frac{d\sigma}{|\nabla\varepsilon(\vec{p})|}
   virtual double optical_scattering_integral(double energy, const Vec3 &momentum, double phonon_energy) const = 0;
   /// new momentum after scattering
   virtual Vec3 optical_scatter(double energy, std::function<double()> random) const = 0;
