@@ -59,7 +59,7 @@ void simulate(const std::vector<Scattering *> mechanisms,
       for (size_t k = 0; k < mechanisms.size(); ++k) {
         free_flight[k] -= mechanisms[k]->rate(p_) * time_step;
         if (free_flight[k] < 0) {
-          p.p = mechanisms[k]->scatter(p_, uniform());
+          p.p = mechanisms[k]->scatter(p_, uniform);
           free_flight[k] = -log(uniform());
           scattering_mechanism = k + 1; // enumerate mechanisms from 1
           break;

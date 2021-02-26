@@ -23,17 +23,21 @@ struct Band {
   /// try to create new particle, true if created, false if not
   virtual bool try_boltzmann_sample_momentum(double temperature, Vec3 &momentum) const = 0;
 
+  /// \int_{\epsilon(p)=energy} \frac{d\sigma}{|\nabla\varepsilon(\vec{p})|}
+  virtual double delta_integral(double energy) const = 0;
+
+  /// deprecated
   /// optimizations for acoustic scattering
   /// scattering integral (see paper)
   virtual double acoustic_scattering_integral(double energy) const = 0;
   /// new momentum after scattering
-  virtual Vec3 acoustic_scatter(double energy, double random) const = 0;
+  virtual Vec3 acoustic_scatter(double energy, std::function<double()> random) const = 0;
 
   /// optimizations for optical scattering
   /// scattering integral (see paper)
   virtual double optical_scattering_integral(double energy) const = 0;
   /// new momentum after scattering
-  virtual Vec3 optical_scatter(double energy, double random) const = 0;
+  virtual Vec3 optical_scatter(double energy, std::function<double()> random) const = 0;
 
   Band(bool occupied) : occupied(occupied) {}
   virtual ~Band() {}
@@ -66,10 +70,18 @@ struct ParabolicBand : public Band {
   double energy(const Vec3 &p) const { return p.dot(p) / (2 * mass); }
   Vec3 velocity(const Vec3 &p) const { return p / mass; }
   bool try_boltzmann_sample_momentum(double temperature, Vec3 &momentum) const;
-  double acoustic_scattering_integral(double energy) const { return sqrt(2 * mass * energy); }
+  double delta_integral(double energy) const { return sqrt(2 * mass * energy); }
+  double acoustic_scattering_integral(double energy) const { return delta_integral(energy); }
   double optical_scattering_integral(double energy) const { return 0; }
-  Vec3 acoustic_scatter(double energy, double random) const { return Vec3(); }
-  Vec3 optical_scatter(double energy, double random) const { return Vec3(); }
+  Vec3 acoustic_scatter(double energy, std::function<double()> random) const {
+    double p = sqrt(2 * mass * energy);
+    double r = random();
+    double cos_theta = 1 - 2 * r;
+    double sin_theta = sqrt(1 - cos_theta * cos_theta);
+    double phi = 2 * math::pi * random();
+    return p * Vec3{sin_theta * cos(phi), sin_theta * sin(phi), cos_theta};
+  }
+  Vec3 optical_scatter(double energy, std::function<double()> random) const { return acoustic_scatter(energy, random); }
   ParabolicBand(bool occupied, double mass) : Band(occupied), mass(mass) {}
 };
 
@@ -80,7 +92,7 @@ struct Scattering {
 
   Scattering(const Material &m, const Band &b, double e) : material(m), band(b), energy(e) {}
   virtual double rate(const Vec3 &p) const = 0;
-  virtual Vec3 scatter(const Vec3 &p, double random) const = 0;
+  virtual Vec3 scatter(const Vec3 &p, std::function<double()> random) const = 0;
   virtual ~Scattering() {}
 };
 
@@ -95,7 +107,7 @@ struct AcousticScattering : public Scattering {
   virtual double rate(const Vec3 &p) const {
     return constant * band.acoustic_scattering_integral(band.energy(p));
   }
-  virtual Vec3 scatter(const Vec3 &p, double random) const {
+  virtual Vec3 scatter(const Vec3 &p, std::function<double()> random) const {
     return band.acoustic_scatter(band.energy(p), random);
   };
 };
@@ -107,7 +119,7 @@ struct OpticalScattering : public Scattering {
   virtual double rate(const Vec3 &p) const {
     return constant * band.optical_scattering_integral(band.energy(p) - energy);
   }
-  virtual Vec3 scatter(const Vec3 &p, double random) const {
+  virtual Vec3 scatter(const Vec3 &p, std::function<double()> random) const {
     return band.optical_scatter(band.energy(p) - energy, random);
   };
 };
